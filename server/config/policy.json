@@ -1,0 +1,16 @@
+{
+    "allow_all": [
+        "status",
+        "logout",
+        "login"
+    ],
+    "users": {
+        "developer1": {
+            "role": "user",
+            "permissions": [
+                "init",
+                "project"
+            ]
+        }
+    }
+}

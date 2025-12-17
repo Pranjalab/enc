@@ -1,0 +1,14 @@
+
+
+services:
+  ssh-server:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    container_name: enc_ssh_server
+    ports:
+      - "2222:22"
+    environment:
+      - ADMIN_PASSWORD=secure_admin_pass
+    volumes:
+      - ./ssh_keys:/home/admin/.ssh
