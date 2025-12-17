@@ -1,39 +1,80 @@
-# ENC: Secure Code Execution Environment
+# ENC: Encrypted Native Code
 
-ENC (Encrypted Native Code) is a secure, memory-only code execution platform designed to protect intellectual property and runtime secrets. It allows developers to execute code remotely without exposing source code or secrets to the disk.
+> **"Secure your code at rest, execute it in memory, access it from anywhere."**
 
-## Project Structure
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+![Status: Beta](https://img.shields.io/badge/Status-Beta-orange.svg)
 
-This project is divided into two main components:
+**ENC** is a comprehensive security ecosystem designed to protect your intellectual property. It ensures that your source code is never exposed on disk, providing a secure lifecycle from storage to execution to remote access.
 
-### 1. [Server](./server/README.md)
-The **ENC Server** is the secure bastion that hosts the execution environment.
-*   **Role**: Host, Execution, User Management.
-*   **Security**: SSH only (Port 2222), Role-Based Access Control (RBAC).
-*   **Storage**: Manages User DB (`policy.json`) and secure ephemeral storage.
+---
 
-### 2. [Client (enc-cli)](./enc-cli/README.md)
-The **ENC Client** is a lightweight CLI tool installed on developer machines.
-*   **Role**: Connectivity, Command Forwarding.
-*   **Usage**: Connects to the server via SSH to manage projects and run code.
+## 🌟 Core Features
 
-## Quick Start
+### 1. 🛡️ Secure Project Management
+**Manage your projects from an SSH-secured bastion that locks down your code.**
+*   **Zero-Trust Storage**: All project files are stored locally encrypted (AES-256). No admin or intruder can read your source code on the disk.
+*   **RBAC Secured**: Access is strictly managed via Role-Based Access Control on a hardened SSH server (Port 2222).
+*   **Isolation**: Each project exists in a secure container, isolated from the host OS.
 
-### 1. Host the Server
-Navigate to the `server/` directory and follow the instructions to deploy the Docker container.
+### 2. ⚡ Runtime Encrypted Execution
+**Deploy and run code directly from RAM, bypassing the disk entirely.**
+*   **Memory-Only Decryption**: When you run a script, ENC decrypts it strictly into memory buffers.
+*   **Supported Runtimes**: Execute secure code using **Python**, **Docker**, or internal **APIs**.
+*   **No Forensic Trace**: If the server pulls the plug, your code vanishes. No temporary files found in `/tmp` or swap.
+
+### 3. 🌍 Secure Remote Access & Workflow
+**Work from anywhere using the `enc-cli` with a session-managed workflow.**
+*   **Secure Sessions**: Login via the CLI to start a secure usage session.
+*   **Auto-Locking**: When you logout or your session times out, all memory is wiped and keys are dropped.
+*   **Smart Git Sync**: (Optional) Automatically commits your work to your Git repository when your session closes—choose between storing **Encrypted** (for public repos) or **Decrypted** (for private secure repos) backups.
+
+---
+
+## 🏗 Architecture
+
+| Component | Role |
+| :--- | :--- |
+| **[Server (The Vault)](./server/README.md)** | Hosts the encrypted projects and handles the Runtime Encrypted Execution. Manages user identities and git synchronization. |
+| **[Client (The Key)](./enc-cli/README.md)** | Your secure gateway. Connects from anywhere via SSH to manage sessions, configuration, and project access. |
+
+---
+
+## 🚀 Quick Start in 5 Minutes
+
+### 1. Deploy the Server
+Start the secure execution environment using Docker.
 ```bash
 cd server
-less README.md
+docker compose up -d --build
+# Secure Bastion active on localhost:2222
 ```
 
-### 2. Install the Client
-Navigate to the `enc-cli/` directory to install the local tool.
+### 2. Install the User Client
+Get the tool to access your server.
 ```bash
-cd enc-cli
-less README.md
+cd ../enc-cli
+./install.sh
+source ~/.zshrc
 ```
 
-## Security Model
-*   **Single Entry Point**: All access is via SSH on port 2222.
-*   **Restricted Shell**: Users never interact with the OS directly; they are confined to the `enc` environment.
-*   **RBAC**: Strict separation between Admins (User Managers) and Developers.
+### 3. Connect & Secure Your Work
+Login to the fortress.
+```bash
+enc config init
+# URL: http://localhost:2222 | User: admin
+
+enc login
+# Default Password: secure_admin_pass
+```
+
+### 4. Verify Status
+Confirm you are in a secure, memory-only session.
+```bash
+enc status
+# > System Secure. Session Active.
+```
+
+---
+
+_Protect your code. Trust no disk. execute via RAM._

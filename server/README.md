@@ -1,106 +1,56 @@
-# ENC Server Setup & User Management Guide
+# ENC Server: The Secure Execution Runtime
 
-This guide explains how to host the secure ENC SSH Bastion and manage access using the ENC CLI.
+The **ENC Server** is the heart of the ecosystem. It provides the **Secure Server** management and **Runtime Encrypted Execution** capabilities.
 
-## 1. Hosting the Server
+## 🛡️ Feature 1: The Secure Fortress
+The server creates a hardened boundary around your code.
 
-The server is a lightweight Alpine Linux container running OpenSSH.
+- **Encrypted Storage**: Projects stored here are encrypted at rest. Physical access to the server disk yields only gibberish.
+- **SSH Bastion**: The only entry point is via SSH on a non-standard port (`2222`).
+- **Restricted Environment**: Users are confined to `enc-shell`, preventing unauthorized OS traversal.
 
-### Start the Server
+## ⚡ Feature 2: Runtime Encrypted Execution
+This is the core innovation of ENC. It allows code to run without ever existing as a plaintext file.
+
+### How it Works
+1.  **Request**: You request execution (e.g., `enc run my_script.py`).
+2.  **Fetch**: The server reads the *encrypted* file from disk.
+3.  **Decrypt**: The file is decrypted **directly into a RAM buffer**.
+4.  **Execute**: The runtime (Python, Docker, etc.) loads the code from memory.
+5.  **Wipe**: Once execution finishes, the memory buffer is zeroed out.
+
+---
+
+## 🏗 Deployment Guide
+
+### Prerequisites
+- Docker & Docker Compose
+- Port `2222` free on the host
+
+### 1. Launch the Server
 ```bash
 cd server
 docker compose up -d --build
 ```
+*   **Admin User**: `admin`
+*   **Admin Password**: `secure_admin_pass` (Change immediately in production!)
 
-### Check Status
+### 2. Verify Security
+Check that the container is running and listening strictly on the configured port.
 ```bash
 docker ps
-# Ensure 'enc_ssh_server' is running on port 2222
 ```
 
 ---
 
-## 2. Managing Users (RBAC)
+## 👥 User & Project Management
 
-Previously, we used scripts or manual edits. Now, the **ENC CLI** manages users directly.
+Use the **ENC CLI** to manage this server remotely.
 
-### Prerequisites
-*   You must be logged in as the `admin` user (via SSH).
-*   The `admin` has `sudo` privileges to manage system users.
-
-### User Roles
-*   **admin**: Full system access, runs `bash` shell.
-*   **Users**: Restricted access, runs `enc-shell`. Restricted to specific `enc` commands.
-
-### Commands
-
-#### 1. Add a New User
-```bash
-# Syntax: enc user add <username>
-enc user add developer1
-```
-*   You will be prompted for a **Password** and **SSH Key**.
-*   This creates a Linux user and updates the permission policy.
-
-#### 2. List Users
-```bash
-enc user list
-```
-*   Displays a table of all managed users and their allowed commands.
-
-#### 3. Remove a User
-```bash
-enc user remove developer1
-```
-*   **Warning**: This deletes the user and their home directory/data immediately.
+- **Add Users**: `enc user add <name>`
+- **Manage Permissions**: Edit `/etc/enc/policy.json` (or use CLI commands).
 
 ---
 
-## 3. SSH Connectivity
-
-### Connecting as Admin
-```bash
-ssh -p 2222 admin@localhost
-```
-
-### Connecting as Restricted User
-```bash
-ssh -p 2222 developer1@localhost
-```
-*   You will see a restricted prompt `enc>`.
-*   Standard commands like `ls` or `cd` are **BLOCKED**.
-*   Only valid `enc` commands are allowed.
-
----
-
-## 4. Verification & Testing
-
-We have built automated test suites to verify the security and functionality of the server.
-
-### Run All Tests
-From the project root:
-```bash
-pytest -s
-```
-
-### Specific Test Scenarios
-
-#### 1. Basic SSH Connectivity
-Verifies that the SSH server accepts passwords and keys for the admin.
-```bash
-pytest -s server/tests/test_ssh.py
-```
-
-#### 2. Restricted Shell & RBAC
-Verifies that restricted users cannot run forbidden commands (like `ls`) and receive the correct secured shell.
-```bash
-pytest -s server/tests/test_rbac.py
-```
-
-#### 3. User Lifecycle (CRUD)
-Verifies the full administrative flow: Adding, Listing, and Removing users via the CLI.
-```bash
-pytest -s server/tests/test_user_lifecycle.py
-```
-
----
+## 🔒 Security Guarantee
+If this server is powered off, seized, or inspected, your source code remains AES-256 encrypted. Only an active, authenticated RAM session can unlock it.
