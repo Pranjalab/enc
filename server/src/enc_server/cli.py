@@ -4,6 +4,9 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from enc_server.config import get_enc_dir, load_config, save_config, get_server_url
 import requests
+import json
+from enc_server.enc import EncServer
+
 
 console = Console()
 
@@ -118,43 +121,25 @@ def get_server():
     url = get_server_url()
     console.print(f"Current Server URL: [bold blue]{url}[/bold blue]")
 
-@cli.command()
-def login():
-    """Authenticate with the ENC Server."""
-    server_url = get_server_url()
-    console.print(f"Connecting to ENC Server at: [bold blue]{server_url}[/bold blue]")
-    
-    # 1. Attempt connection / Check for SSH Keys (Stub for logic)
-    # For now, we fall back to password auth directly
-    
-    username = Prompt.ask("Username")
-    password = Prompt.ask("Password", password=True)
-    
-    try:
-        # Assuming server has /users/login endpoint
-        # NOTE: In real world, we'd exchange keys or get a token.
-        # This matches the 'basic User Model' we built.
-        resp = requests.post(f"{server_url}/users/login", json={"username": username, "password": password})
-        
-        if resp.status_code == 200:
-            console.print(Panel(f"Login successful as {username}", title="ENC Login", style="bold green"))
-            # Initializing local session state...
-            from enc_server.session.session import current_session
-            # Stub: we use password as key material for local master key unlocking
-            # In a real flow, we'd fetch the user's encrypted master key from the server
-            # and unlock it here.
-        else:
-            console.print(f"[bold red]Login Failed:[/bold red] {resp.text}")
-            
-    except Exception as e:
-        console.print(f"[bold red]Connection Error:[/bold red] {e}")
+@cli.command("server-login")
+@click.argument("username")
+def server_login(username):
+    """Internal: Create a session and return JSON."""
+    from enc_server.enc import EncServer
+    server = EncServer()
+    session = server.create_session(username)
+    # Output ONLY JSON for client parsing
+    import json
+    click.echo(json.dumps(session))
 
-@cli.command()
-def logout():
-    """Logout and clear all session secrets from memory."""
-    from enc_server.session.session import current_session
-    current_session.logout()
-    console.print("[bold green]Logged out.[/bold green] Secrets cleared from memory.")
+@cli.command("server-logout")
+@click.argument("session_id")
+def server_logout(session_id):
+    """Internal: Destroy a session."""
+    from enc_server.enc import EncServer
+    server = EncServer()
+    server.logout_session(session_id)
+    click.echo(json.dumps({"status": "logged_out"}))
 
 @cli.command()
 @click.pass_context
@@ -164,18 +149,45 @@ def init(ctx):
     from enc_server.projects.init import init_project
     init_project()
 
-@cli.command()
-@click.argument('project_name')
-@click.pass_context
-def project(ctx, project_name):
-    check_server_permission(ctx)
-    """Activate a specific project."""
-    console.print(f"[bold yellow]Activating project:[/bold yellow] {project_name}")
+@cli.command("server-project-init")
+@click.argument("project_name")
+@click.option("--password", prompt=True, hide_input=True)
+def server_project_init(project_name, password):
+    """Internal: Initialize encrypted project vault."""
+    from enc_server.gocryptfs_handler import GocryptfsHandler
+    handler = GocryptfsHandler()
+    success = handler.init_project(project_name, password)
+    
+    import json
+    if success:
+        click.echo(json.dumps({"status": "success", "project": project_name}))
+    else:
+        click.echo(json.dumps({"status": "error", "message": "Failed to init project"}))
 
-@cli.command()
-def deactivate():
-    """Deactivate the current session and lock everything."""
-    console.print("[bold red]Deactivating session...[/bold red]")
+@cli.command("server-project-mount")
+@click.argument("project_name")
+@click.option("--password", prompt=True, hide_input=True)
+def server_project_mount(project_name, password):
+    """Internal: Mount encrypted project."""
+    from enc_server.gocryptfs_handler import GocryptfsHandler
+    handler = GocryptfsHandler()
+    success = handler.mount_project(project_name, password)
+    
+    import json
+    if success:
+        click.echo(json.dumps({"status": "success", "mount_point": f"~/.enc/run/master/{project_name}"}))
+    else:
+        click.echo(json.dumps({"status": "error"}))
+
+@cli.command("server-project-unmount")
+@click.argument("project_name")
+def server_project_unmount(project_name):
+    """Internal: Unmount project."""
+    from enc_server.gocryptfs_handler import GocryptfsHandler
+    handler = GocryptfsHandler()
+    handler.unmount_project(project_name)
+    import json
+    click.echo(json.dumps({"status": "success"}))
 
 @cli.group()
 def user():
@@ -367,6 +379,33 @@ def remove_user(ctx, username):
 def status():
     """Show the current security status."""
     console.print(Panel("System Locked", title="ENC Status", style="red"))
+
+@cli.command("server-user-create")
+@click.argument("username")
+@click.argument("password")
+@click.option("--role", default="user", help="Role: admin or user")
+@click.pass_context
+def server_user_create(ctx, username, password, role):
+    """Create a new user (Admin only)."""
+    ensure_admin(ctx)
+    server = EncServer()
+    if server.create_user(username, password, role):
+        console.print(json.dumps({"status": "success", "username": username}))
+    else:
+        # JSON output for client parsing if needed, but console printed errors already
+        console.print(json.dumps({"status": "error", "message": "Failed to create user"}))
+
+@cli.command("server-user-delete")
+@click.argument("username")
+@click.pass_context
+def server_user_delete(ctx, username):
+    """Delete a user (Admin only)."""
+    ensure_admin(ctx)
+    server = EncServer()
+    if server.delete_user(username):
+        console.print(json.dumps({"status": "success", "username": username}))
+    else:
+        console.print(json.dumps({"status": "error", "message": "Failed to delete user"}))
 
 def main():
     # Hook checking into individual commands or group execution

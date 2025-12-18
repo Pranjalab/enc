@@ -1,15 +1,16 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
-# Defaults
-ADMIN_PASSWORD=${ADMIN_PASSWORD:-adminpassword}
+# Ensure FUSE device exists
+if [ ! -e /dev/fuse ]; then
+    echo "Creating /dev/fuse..."
+    mknod -m 666 /dev/fuse c 10 229
+fi
 
-echo "Setting up admin user..."
-# Unlock the user (if locked) and set password
-echo "admin:$ADMIN_PASSWORD" | chpasswd
+# Ensure correct permissions for admin home (in case of volume mounts)
+chown -R admin:admin /home/admin
 
-# Generate host keys if missing (Alpine specific)
+# Start SSHD
+echo "Starting SSH Server..."
 ssh-keygen -A
-
-echo "Starting SSHD..."
-/usr/sbin/sshd -D
+/usr/sbin/sshd -D -e

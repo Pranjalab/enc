@@ -1,10 +1,15 @@
-
-
 services:
   ssh-server:
     build:
       context: ..
       dockerfile: server/Dockerfile
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    devices:
+      - /dev/fuse:/dev/fuserver/Dockerfile
     container_name: enc_ssh_server
     ports:
       - "2222:22"

@@ -1,5 +1,8 @@
+
 import click
+import os
 from rich.console import Console
+from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.table import Table
 from enc_client.enc import Enc
@@ -21,34 +24,13 @@ def cli(ctx, version):
     if ctx.invoked_subcommand is None:
         console.print(ctx.get_help())
 
-# --- Config Group ---
-
-@cli.group()
-def config():
-    """Configure Client Settings."""
+@cli.group("show")
+def show_group():
+    """Show configuration or access rights."""
     pass
 
-@config.command("init")
-def config_init():
-    """Interactive configuration wizard."""
-    console.print("[bold cyan]ENC Client Configuration[/bold cyan]")
-    
-    current = enc_manager.config
-    
-    url = Prompt.ask("ENC Server URL", default=current.get("url", "https://api.enc-server.com"))
-    username = Prompt.ask("Username", default=current.get("username", "admin"))
-    
-    confirm_key = "y" if current.get("ssh_key") else "n"
-    # Logic to ask for key
-    # If key exists, show it exists?
-    # Simple prompt:
-    key = Prompt.ask("SSH Key Path (optional)", default=current.get("ssh_key", ""))
-    
-    enc_manager.init_config(url, username, key)
-    console.print("[bold green]Configuration saved![/bold green]")
-
-@config.command("show")
-def config_show():
+@show_group.command("config")
+def show_config():
     """Display current configuration."""
     cfg = enc_manager.config
     table = Table(title="ENC Configuration")
@@ -56,20 +38,71 @@ def config_show():
     table.add_column("Value", style="green")
     
     for k, v in cfg.items():
-        # Mask session/context slightly? or just show type
-        # For now, show plain
         table.add_row(k, str(v))
         
     console.print(table)
 
-@config.command("set")
-@click.argument("key")
-@click.argument("value")
-def config_set(key, value):
-    """Set a specific configuration value."""
-    enc_manager.set_config_value(key, value)
-    console.print(f"Set [cyan]{key}[/cyan] to [green]{value}[/green]")
+@show_group.command("access")
+def show_access():
+    """Show access rights from session file."""
+    # Placeholder for session logic
+    console.print("[yellow]No active session found.[/yellow]")
 
+@cli.command("set-url")
+@click.argument("url")
+def set_url(url):
+    """Set the ENC Server URL."""
+    enc_manager.set_config_value("url", url)
+    console.print(f"Set URL to: [green]{url}[/green]")
+
+@cli.command("set-username")
+@click.argument("username")
+def set_username(username):
+    """Set the username."""
+    enc_manager.set_config_value("username", username)
+    console.print(f"Set Username to: [green]{username}[/green]")
+
+@cli.command("set-ssh-key")
+@click.argument("ssh_key")
+def set_ssh_key(ssh_key):
+    """Set the SSH Private Key path."""
+    enc_manager.set_config_value("ssh_key", ssh_key)
+    console.print(f"Set SSH Key to: [green]{ssh_key}[/green]")
+
+@cli.command("init")
+@click.argument("path", required=False, default=".")
+def init(path):
+    """Initialize ENC configuration."""
+    console.print(Panel("Welcome to ENC Configuration Wizard", title="ENC Init", style="bold cyan"))
+    
+    # 1. Choose Location
+    config_type = Prompt.ask("Initialize Global (~/.enc) or Local (./.enc) config?", choices=["global", "local"], default="global")
+    
+    target_path = None
+    if config_type == "local":
+        path = os.path.abspath(path)
+        console.print(f"Initializing LOCAL configuration in [cyan]{path}/.enc[/cyan]")
+        target_path = os.path.join(path, ".enc", "config.json")
+    else:
+        console.print("Initializing GLOBAL configuration in [cyan]~/.enc[/cyan]")
+        target_path = os.path.expanduser("~/.enc/config.json")
+        
+    # Check if exists
+    if os.path.exists(target_path):
+        console.print(f"[yellow]Warning: Configuration already exists at {target_path}[/yellow]")
+        if not click.confirm("Do you want to overwrite it?"):
+            console.print("[red]Aborted.[/red]")
+            return
+
+    # 2. Capture Details
+    url = Prompt.ask("Enter ENC Server URL", default="http://localhost:2222")
+    username = Prompt.ask("Enter Username")
+    ssh_key = Prompt.ask("Enter SSH Key Path", default="")
+    
+    # 3. Save
+    enc_manager.init_config(url, username, ssh_key, target_path=target_path)
+    console.print(f"[bold green]Configuration initialized at {target_path}[/bold green]")
+    console.print("Run 'enc check-connection' to verify.")
 
 # --- Connection Commands ---
 
@@ -80,39 +113,115 @@ def check_connection():
 
 @cli.command()
 def login():
-    """Test connection to the server (SSH login)."""
+    """Authenticate with the ENC Server."""
     enc_manager.login()
 
-# --- Forwarding Commands ---
+@cli.group("project")
+def project_group():
+    """Manage projects."""
+    pass
 
-@cli.command(context_settings=dict(ignore_unknown_options=True, allow_extra_args=True))
-@click.argument('args', nargs=-1)
-def projects(args):
-    """Forward 'projects' commands to server."""
-    enc_manager.run_remote("projects", args)
+@project_group.command("init")
+@click.argument("name")
+@click.password_option()
+def project_init(name, password):
+    """Initialize a new encrypted project on server."""
+    # Check login first
+    if not enc_manager.config.get("session_id"):
+        console.print("[yellow]Please login first.[/yellow]")
+        return
+        
+    console.print(f"Initializing project '[cyan]{name}[/cyan]'...")
+    if enc_manager.project_init(name, password):
+        console.print(f"[bold green]Project '{name}' initialized successfully.[/bold green]")
 
-@cli.command(context_settings=dict(ignore_unknown_options=True, allow_extra_args=True))
-@click.argument('args', nargs=-1)
-def user(args):
-    """Forward 'user' commands to server."""
-    enc_manager.run_remote("user", args)
+@project_group.command("dev")
+@click.argument("name")
+@click.password_option()
+def project_dev(name, password):
+    """Mount project for development."""
+    if not enc_manager.config.get("session_id"):
+        console.print("[yellow]Please login first.[/yellow]")
+        return
+        
+    console.print(f"Mounting project '[cyan]{name}[/cyan]'...")
+    if enc_manager.project_mount(name, password):
+        console.print(f"[bold green]Project mounted.[/bold green]")
+        # TODO: Start Sync Logic here
+        console.print("[dim]Sync capability to be implemented via rsync/sshfs...[/dim]")
+
+@project_group.command("sync")
+@click.argument("name")
+@click.argument("local_path", type=click.Path(exists=True))
+def project_sync(name, local_path):
+    """Sync local files to the remote project."""
+    if not enc_manager.config.get("session_id"):
+        console.print("[yellow]Please login first.[/yellow]")
+        return
+        
+    console.print(f"Syncing '[cyan]{local_path}[/cyan]' -> '[cyan]{name}[/cyan]'...")
+    if enc_manager.project_sync(name, local_path):
+        console.print(f"[bold green]Sync Complete.[/bold green]")
+    else:
+        console.print(f"[bold red]Sync Failed.[/bold red]")
+
+@project_group.command("run")
+@click.argument("name")
+@click.argument("command", nargs=-1)
+def project_run(name, command):
+    """Run a command on the remote project."""
+    if not command:
+        console.print("[yellow]No command provided. Starting interactive shell...[/yellow]")
+        # TODO: Interactive shell support
+        cmd_str = "bash" # Default to shell
+    else:
+        cmd_str = " ".join(command) # Naive join, assume user handles quotes or use shlex if needed upstream
     
-@cli.command(context_settings=dict(ignore_unknown_options=True, allow_extra_args=True))
-@click.argument('args', nargs=-1)
-def init(args):
-    """Forward 'init' commands to server."""
-    enc_manager.run_remote("init", args)
+    console.print(f"Running '[cyan]{cmd_str}[/cyan]' in project '[cyan]{name}[/cyan]'...")
+    
+    if enc_manager.project_run(name, cmd_str):
+        # Return code handles success/fail printing usually
+        pass
+    else:
+        # Failure message handled in manager
+        pass
 
-@cli.command(context_settings=dict(ignore_unknown_options=True, allow_extra_args=True))
-@click.argument('subcommand', required=False)
-@click.argument('args', nargs=-1)
-def exec(subcommand, args):
-    """Execute generic ENC commands on the server."""
-    cmd = []
-    if subcommand:
-        cmd.append(subcommand)
-    cmd.extend(args)
-    enc_manager.run_remote(cmd[0] if cmd else "", cmd[1:])
+@cli.command()
+def logout():
+    """Logout and clear local sessions."""
+    if enc_manager.logout():
+        console.print("[bold green]Logged out successfully.[/bold green] Local sessions cleared.")
+    else:
+        console.print("[yellow]No active session or error clearing session.[/yellow]")
+
+
+@cli.group()
+def user():
+    """Manage users (admin only)."""
+    pass
+
+@user.command("create")
+@click.argument("username")
+@click.argument("password")
+@click.option("--role", default="user", help="User role (admin/user)")
+def user_create(username, password, role):
+    """Create a new user on the server."""
+    console.print(f"Creating user [cyan]{username}[/cyan]...")
+    if enc_manager.user_create(username, password, role):
+        console.print(f"[green]User {username} created successfully.[/green]")
+    else:
+        console.print(f"[red]Failed to create user.[/red]")
+
+@user.command("rm")
+@click.argument("username")
+def user_delete(username):
+    """Delete a user from the server."""
+    if click.confirm(f"Are you sure you want to delete user '{username}'?"):
+        if enc_manager.user_delete(username):
+             console.print(f"[green]User {username} deleted.[/green]")
+        else:
+             console.print(f"[red]Failed to delete user.[/red]")
+
 
 def main():
     cli()

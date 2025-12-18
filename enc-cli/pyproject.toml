@@ -7,7 +7,7 @@ name = "enc-cli"
 version = "1.0.0"
 description = "Secure, Memory-Only Encryption for Code Execution"
 authors = [
-  { name="ENC Team", email="enc@example.com" },
+  { name="Pranjal Bhaskare", email="pranjalab@gmail.com" },
 ]
 readme = "README.md"
 requires-python = ">=3.9"
@@ -20,6 +20,7 @@ dependencies = [
     "click>=8.0",
     "rich>=10.0",
     "cryptography>=3.0",
+    "pexpect>=4.0",
 ]
 
 [project.scripts]
