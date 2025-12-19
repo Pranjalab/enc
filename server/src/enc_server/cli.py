@@ -95,11 +95,7 @@ def ensure_admin(ctx):
     console.print(f"[bold red]Permission Error:[/bold red] Only admins can perform this action.")
     ctx.exit(1)
 
-@click.group()
-def cli():
-    """ENC — Secure, Memory-Only Encryption for Code Execution"""
-    # Ensure config dir exists on any command
-    get_enc_dir()
+
 
 @cli.group()
 def config():
@@ -288,6 +284,7 @@ def add_user(ctx, username):
 def list_users(ctx):
     """List all managed users."""
     check_server_permission(ctx)
+    ensure_admin(ctx)
     from rich.table import Table
     import json
     import subprocess
@@ -331,6 +328,7 @@ def list_users(ctx):
 def remove_user(ctx, username):
     """Remove a restricted user."""
     check_server_permission(ctx)
+    ensure_admin(ctx)
     import subprocess
     import json
     import os
@@ -406,6 +404,20 @@ def server_user_delete(ctx, username):
         console.print(json.dumps({"status": "success", "username": username}))
     else:
         console.print(json.dumps({"status": "error", "message": "Failed to delete user"}))
+
+@cli.group()
+def show():
+    """Show system information."""
+    pass
+
+@show.command("users")
+@click.pass_context
+def show_users(ctx):
+    """Show all managed users (Admin only)."""
+    # Re-use the logic from list_users
+    # We can invoke it or just duplicate the logic. Invoking is cleaner but click contexts can be tricky.
+    # We will just call the function implementation if we extracted it, but for now we'll route to it.
+    ctx.invoke(list_users)
 
 def main():
     # Hook checking into individual commands or group execution

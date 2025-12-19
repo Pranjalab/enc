@@ -19,6 +19,7 @@ class Enc:
         self.local_config_file = os.path.join(self.local_dir, "config.json")
         
         self.config, self.active_config_path = self.load_config()
+        self.config_dir = os.path.dirname(self.active_config_path)
 
     def load_config(self):
         """
@@ -159,7 +160,7 @@ class Enc:
         ssh_key = self.config.get("ssh_key")
         
         if not url_parts or not username:
-             console.print("[red]Not configured. Run 'enc config init' first.[/red]")
+             console.print("[red]Not configured global or local config. Run 'enc config init' first.[/red]")
              return None, None
         
         host, port = url_parts

@@ -67,4 +67,6 @@ if [ -n "$RC_FILE" ] && [ -f "$RC_FILE" ]; then
     fi
 fi
 
+echo "The default $APP_NAME configuration has been removed. However please note the projects local .enc/config is not been removed."
+
 echo "Uninstallation complete. Please restart your terminal."

@@ -32,10 +32,28 @@ This is the core innovation of ENC. It allows code to run without ever existing 
 cd server
 docker compose up -d --build
 ```
-*   **Admin User**: `admin`
-*   **Admin Password**: `secure_admin_pass` (Change immediately in production!)
 
-### 2. Verify Security
+### 🔑 SSH Configuration
+The server uses a unified directory `server/ssh/` to manage identity:
+
+1.  **Your Access**:
+    - Add your public key to `server/ssh/authorized_keys`.
+    - This allows you to log in as `admin`.
+    - [Detailed Guide: Generate SSH Keys](ssh/generate_ssh_key.md)
+
+2.  **Server Identity**:
+    - **Note**: The `server/ssh/host_keys/` folder persists the server's unique fingerprint.
+    - It prevents "REMOTE HOST IDENTIFICATION HAS CHANGED" warnings after rebuilds.
+
+### 2. Connect
+Once launched, connect via:
+```bash
+ssh -i ~/.ssh/enc_key -p 2222 admin@localhost
+```
+
+---
+
+### 3. Verify Security
 Check that the container is running and listening strictly on the configured port.
 ```bash
 docker ps

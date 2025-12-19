@@ -38,9 +38,22 @@ Point the CLI to your ENC Server.
 enc config init
 # URL: http://your-server-ip:2222
 # User: your-username
+# SSH Key: [Leave empty if using ssh-agent/ssh-add]
 ```
 
-### 3. Login
+### 3. SSH Setup (Important)
+Ensure your SSH agent is running and has your ENC key loaded so the CLI can connect without password prompts.
+```bash
+ssh-add ~/.ssh/enc_key
+
+
+#### Alternative: Manual Configuration
+If you prefer not to use an agent or config file, you can explicitly tell ENC which key to use:
+```bash
+enc set-ssh-key ~/.ssh/enc_key
+```
+
+### 4. Login
 Start your secure session.
 ```bash
 enc login

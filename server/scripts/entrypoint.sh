@@ -10,7 +10,16 @@ fi
 # Ensure correct permissions for admin home (in case of volume mounts)
 chown -R admin:admin /home/admin
 
+# Unlock admin account (Alpine locks passwordless accounts by default)
+passwd -u admin || true
+
 # Start SSHD
 echo "Starting SSH Server..."
-ssh-keygen -A
-/usr/sbin/sshd -D -e
+
+# Provision host keys if missing in volume
+if [ ! -f /etc/ssh/ssh_host_keys/ssh_host_ed25519_key ]; then
+    ssh-keygen -A
+    cp /etc/ssh/ssh_host_* /etc/ssh/ssh_host_keys/
+fi
+
+/usr/sbin/sshd -D -e -h /etc/ssh/ssh_host_keys/ssh_host_ed25519_key -h /etc/ssh/ssh_host_keys/ssh_host_rsa_key -h /etc/ssh/ssh_host_keys/ssh_host_ecdsa_key
