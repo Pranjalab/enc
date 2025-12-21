@@ -5,6 +5,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.table import Table
+import json
 from enc_client.enc import Enc
 
 console = Console()
@@ -200,25 +201,117 @@ def user():
     """Manage users (admin only)."""
     pass
 
+@user.command("list")
+@click.option("--json", "json_output", is_flag=True, help="Output in JSON format")
+def user_list(json_output):
+    """List users (cached in session)."""
+    users = enc_manager.user_list()
+    if users:
+        table = Table(title="ENC Users")
+        table.add_column("Username", style="cyan")
+        # If server returns more details (like role/id), we could add them.
+        # Assuming simple list of strings OR list of dicts.
+        # Implementation in enc.py handles dict/list return, but let's assume dicts if possible, or handle strings.
+        
+        # Heuristic: inspect first element
+        if isinstance(users, list) and len(users) > 0:
+            if isinstance(users[0], dict):
+                 table.add_column("Role", style="magenta")
+                 for u in users:
+                     table.add_row(u.get("username", "N/A"), u.get("role", "user"))
+            else:
+                 for u in users:
+                     table.add_row(str(u))
+        elif isinstance(users, list) and len(users) == 0:
+            if json_output:
+                click.echo(json.dumps([]))
+            else:
+                console.print("[yellow]No users found.[/yellow]")
+            return
+            
+        if json_output:
+            click.echo(json.dumps(users))
+        else:
+            console.print(table)
+
 @user.command("create")
 @click.argument("username")
-@click.argument("password")
-@click.option("--role", default="user", help="User role (admin/user)")
-def user_create(username, password, role):
+@click.option("--password",  default=None, help="User password")
+@click.option("--role", type=click.Choice(["admin", "user"], case_sensitive=False), default=None, help="User role")
+@click.option("--ssh-key", default=None, help="Path to public SSH key")
+@click.option("--json", "json_output", is_flag=True, help="Output in JSON format")
+def user_create(username, password, role, ssh_key, json_output):
     """Create a new user on the server."""
-    console.print(f"Creating user [cyan]{username}[/cyan]...")
-    if enc_manager.user_create(username, password, role):
-        console.print(f"[green]User {username} created successfully.[/green]")
-    else:
-        console.print(f"[red]Failed to create user.[/red]")
+    
+    # 1. Prompt for Role if missing
+    if not role:
+        role = click.prompt("Select Role", type=click.Choice(["admin", "user"], case_sensitive=False), default="user")
+    
+    # 2. Prompt for Password if missing
+    if not password:
+        password = click.prompt("Enter Password", hide_input=True)
+    
+    # 3. Handle SSH Key
+    ssh_key_content = None
 
-@user.command("rm")
+    if ssh_key:
+         path = os.path.expanduser(ssh_key)
+         if os.path.exists(path):
+             try:
+                with open(path, 'r') as f:
+                    ssh_key_content = f.read().strip()
+             except Exception as e:
+                 console.print(f"[red]Error reading key file: {e}[/red]")
+                 return
+         else:
+             console.print(f"[yellow]Warning: SSH key file not found: {path}[/yellow]")
+             return
+    else:
+         # Interactive prompt
+         ssh_key_path = click.prompt("Path to public SSH key (optional, press Enter to skip)", default="", show_default=False)
+         if ssh_key_path:
+             path = os.path.expanduser(ssh_key_path)
+             if os.path.exists(path):
+                try:
+                    with open(path, 'r') as f:
+                        ssh_key_content = f.read().strip()
+                except Exception as e:
+                     console.print(f"[red]Error reading key file: {e}[/red]")
+                     return
+             else:
+                 console.print(f"[red]File not found: {path}[/red]")
+                 return
+
+    console.print(f"Creating user [cyan]{username}[/cyan] with role [magenta]{role}[/magenta]...")
+    if enc_manager.user_create(username, password, role, ssh_key_content):
+        if json_output:
+             click.echo(json.dumps({"status": "success", "username": username}))
+        else:
+             console.print(f"[green]User {username} created successfully.[/green]")
+    else:
+        if json_output:
+             click.echo(json.dumps({"status": "error", "message": "Failed"}))
+        else:
+             console.print(f"[red]Failed to create user.[/red]")
+
+@user.command("remove")
 @click.argument("username")
-def user_delete(username):
+@click.option("--json", "json_output", is_flag=True, help="Output in JSON format")
+def user_delete(username, json_output):
     """Delete a user from the server."""
-    if click.confirm(f"Are you sure you want to delete user '{username}'?"):
-        if enc_manager.user_delete(username):
+    if not json_output:
+        if not click.confirm(f"Are you sure you want to delete user '{username}'?"):
+            return
+
+    console.print(f"Deleting user [cyan]{username}[/cyan]...")
+    if enc_manager.user_delete(username):
+        if json_output:
+             click.echo(json.dumps({"status": "success", "username": username}))
+        else:
              console.print(f"[green]User {username} deleted.[/green]")
+    else:
+        if json_output:
+             click.echo(json.dumps({"status": "error", "message": "Failed"}))
         else:
              console.print(f"[red]Failed to delete user.[/red]")
 

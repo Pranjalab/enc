@@ -1,6 +1,21 @@
+# Stage 1: Builder
+FROM golang:alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache git bash openssl-dev gcc musl-dev
+
+# Clone and build gocryptfs from source to fix x/crypto CVEs
+WORKDIR /build
+RUN git clone https://github.com/rfjakob/gocryptfs.git . && \
+    git checkout v2.5.4 && \
+    go get -u golang.org/x/crypto && \
+    go build -tags openssl -o gocryptfs .
+
+# Stage 2: Runtime
 FROM alpine:latest
 
-# Install dependencies
+# Install runtime dependencies
+# exclude gocryptfs package as we copy our own
 RUN apk add --no-cache \
     openssh \
     openrc \
@@ -8,14 +23,19 @@ RUN apk add --no-cache \
     py3-pip \
     bash \
     sudo \
-    gocryptfs \
     fuse \
     rsync \
     openssl
 
+# Copy patched gocryptfs
+COPY --from=builder /build/gocryptfs /usr/local/bin/gocryptfs
+
+# Upgrade pip to fix CVE-2025-8869
+RUN pip install --upgrade pip --break-system-packages
+
 # Configure SSH
-RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config && \
-    sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config && \
+RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
     sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config && \
     sed -i 's/#StrictModes yes/StrictModes no/' /etc/ssh/sshd_config

@@ -6,121 +6,74 @@ from enc_server.config import get_enc_dir, load_config, save_config, get_server_
 import requests
 import json
 from enc_server.enc import EncServer
+from enc_server.authentications import Authentication
 
 
 console = Console()
+auth = Authentication()
 
 @click.group()
-def cli():
+@click.option("--session-id", help="Active session ID for logging.")
+@click.pass_context
+def cli(ctx, session_id):
     """ENC — Secure, Memory-Only Encryption for Code Execution"""
+    ctx.ensure_object(dict)
+    ctx.obj["session_id"] = session_id
     # Ensure config dir exists on any command
     get_enc_dir()
+
+def log_result(ctx, result_data):
+    """Log the command result to the session file if session_id is provided."""
+    session_id = ctx.obj.get("session_id")
+    if session_id:
+        from enc_server.enc import EncServer
+        server = EncServer()
+        # Use full command path for clarity in logs
+        cmd_path = ctx.command_path
+        server.log_command(session_id, cmd_path, result_data)
 
 def check_server_permission(ctx):
     """Check permissions if running in Server Mode."""
     import os
-    import json
     import getpass
     
-    if os.environ.get("ENC_MODE") != "SERVER":
-        return
+    # We unconditionally check permissions for the server CLI
+    # This ensures security even if ENV vars are missing (e.g. non-interactive SSH)
 
-    # In Server Mode, we check local policy
+
     user = getpass.getuser()
-    cmd_name = ctx.command.name
+    cmd_path = ctx.command_path.replace("enc ", "")
     
-    # Defaults
-    policy_file = "/etc/enc/policy.json"
-    allowed = False
-    
-    if user == "admin":
-        allowed = True
-    elif os.path.exists(policy_file):
-        try:
-            with open(policy_file, 'r') as f:
-                policy = json.load(f)
-            
-            # Retrieve user record. Could be list (old schema) or dict (new schema)
-            user_record = policy.get("users", {}).get(user)
-            
-            if cmd_name in policy.get("allow_all", []):
-                allowed = True
-            elif user_record:
-                # Handle Dict (New Schema)
-                if isinstance(user_record, dict):
-                    permissions = user_record.get("permissions", [])
-                    role = user_record.get("role", "user")
-                    
-                    # Admins allow everything
-                    if role == "admin":
-                        allowed = True
-                    elif cmd_name in permissions:
-                        allowed = True
-                
-                # Handle List (Old Schema Compatibility)
-                elif isinstance(user_record, list):
-                    if cmd_name in user_record:
-                        allowed = True
-                        
-        except Exception:
-            pass # Fail safe -> allowed=False
+    # Check if user exists in policy
+    if auth.get_user_role(user) is None:
+         console.print(f"[bold red]Access Denied:[/bold red] User '{user}' is not registered. Please contact your admin to add the user.")
+         ctx.exit(1)
 
-    if not allowed:
-        console.print(f"[bold red]Access Denied:[/bold red] User '{user}' is not allowed to run '{cmd_name}'.")
+    if not auth.is_allowed(user, cmd_path):
+        console.print(f"[bold red]Access Denied:[/bold red] User '{user}' is not allowed to run '{cmd_path}'.")
         ctx.exit(1)
 
 def ensure_admin(ctx):
     """Explicitly check if current user is admin."""
     import getpass
     import os
-    import json
     
-    if os.environ.get("ENC_MODE") != "SERVER":
-        return
+    # Unconditional admin check
+
 
     user = getpass.getuser()
-    if user == "admin":
-        return
-
-    # Check policy for admin role
-    try:
-        with open("/etc/enc/policy.json", 'r') as f:
-            policy = json.load(f)
-        record = policy.get("users", {}).get(user)
-        if isinstance(record, dict) and record.get("role") == "admin":
-            return
-    except:
-        pass
-        
-    console.print(f"[bold red]Permission Error:[/bold red] Only admins can perform this action.")
-    ctx.exit(1)
-
-
-
-@cli.group()
-def config():
-    """Manage ENC configuration."""
-    pass
-
-@config.command("set-server")
-@click.argument("url")
-def set_server(url):
-    """Set the ENC Server URL."""
-    cfg = load_config()
-    cfg["server_url"] = url
-    save_config(cfg)
-    console.print(f"[bold green]Success:[/bold green] Server URL set to {url}")
-
-@config.command("get-server")
-def get_server():
-    """Get the current ENC Server URL."""
-    url = get_server_url()
-    console.print(f"Current Server URL: [bold blue]{url}[/bold blue]")
+    role = auth.get_user_role(user)
+    
+    if role not in [auth.ROLE_SUPER_ADMIN, auth.ROLE_ADMIN]:
+        console.print(f"[bold red]Permission Error:[/bold red] Only admins can perform this action.")
+        ctx.exit(1)
 
 @cli.command("server-login")
 @click.argument("username")
-def server_login(username):
+@click.pass_context
+def server_login(ctx, username):
     """Internal: Create a session and return JSON."""
+    check_server_permission(ctx)
     from enc_server.enc import EncServer
     server = EncServer()
     session = server.create_session(username)
@@ -130,8 +83,10 @@ def server_login(username):
 
 @cli.command("server-logout")
 @click.argument("session_id")
-def server_logout(session_id):
+@click.pass_context
+def server_logout(ctx, session_id):
     """Internal: Destroy a session."""
+    check_server_permission(ctx)
     from enc_server.enc import EncServer
     server = EncServer()
     server.logout_session(session_id)
@@ -140,177 +95,240 @@ def server_logout(session_id):
 @cli.command()
 @click.pass_context
 def init(ctx):
-    check_server_permission(ctx)
     """Initialize a new ENC project in the current directory."""
+    check_server_permission(ctx)
     from enc_server.projects.init import init_project
     init_project()
 
 @cli.command("server-project-init")
 @click.argument("project_name")
 @click.option("--password", prompt=True, hide_input=True)
-def server_project_init(project_name, password):
+@click.pass_context
+def server_project_init(ctx, project_name, password):
     """Internal: Initialize encrypted project vault."""
+    check_server_permission(ctx)
     from enc_server.gocryptfs_handler import GocryptfsHandler
     handler = GocryptfsHandler()
     success = handler.init_project(project_name, password)
     
     import json
+    import getpass
     if success:
-        click.echo(json.dumps({"status": "success", "project": project_name}))
+        # Add project to user's list
+        user = getpass.getuser()
+        auth.add_user_project(user, project_name)
+        res = {"status": "success", "project": project_name}
+        log_result(ctx, res)
+        click.echo(json.dumps(res))
     else:
-        click.echo(json.dumps({"status": "error", "message": "Failed to init project"}))
+        res = {"status": "error", "message": "Failed to init project"}
+        log_result(ctx, res)
+        click.echo(json.dumps(res))
 
 @cli.command("server-project-mount")
 @click.argument("project_name")
 @click.option("--password", prompt=True, hide_input=True)
-def server_project_mount(project_name, password):
+@click.pass_context
+def server_project_mount(ctx, project_name, password):
     """Internal: Mount encrypted project."""
+    check_server_permission(ctx)
+    
+    import getpass
+    import json
+    user = getpass.getuser()
+    if not auth.has_project_access(user, project_name):
+        click.echo(json.dumps({"status": "error", "message": "Access Denied: You do not have access to this project."}))
+        return
+
     from enc_server.gocryptfs_handler import GocryptfsHandler
     handler = GocryptfsHandler()
     success = handler.mount_project(project_name, password)
     
-    import json
     if success:
-        click.echo(json.dumps({"status": "success", "mount_point": f"~/.enc/run/master/{project_name}"}))
+        res = {"status": "success", "mount_point": f"~/.enc/run/master/{project_name}"}
+        log_result(ctx, res)
+        click.echo(json.dumps(res))
     else:
-        click.echo(json.dumps({"status": "error"}))
+        res = {"status": "error"}
+        log_result(ctx, res)
+        click.echo(json.dumps(res))
 
 @cli.command("server-project-unmount")
 @click.argument("project_name")
-def server_project_unmount(project_name):
+@click.pass_context
+def server_project_unmount(ctx, project_name):
     """Internal: Unmount project."""
+    check_server_permission(ctx)
+    
+    import getpass
+    import json
+    user = getpass.getuser()
+    if not auth.has_project_access(user, project_name):
+        click.echo(json.dumps({"status": "error", "message": "Access Denied: You do not have access to this project."}))
+        return
+
     from enc_server.gocryptfs_handler import GocryptfsHandler
     handler = GocryptfsHandler()
     handler.unmount_project(project_name)
-    import json
+    res = {"status": "success"}
+    log_result(ctx, res)
+    click.echo(json.dumps(res))
+
+@cli.command("server-project-run")
+@click.argument("project_name")
+@click.argument("cmd_str")
+@click.pass_context
+def server_project_run(ctx, project_name, cmd_str):
+    """Internal: Run a command in project vault."""
+    check_server_permission(ctx)
+    import getpass
+    import os
+    import subprocess
+    
+    user = getpass.getuser()
+    if not auth.has_project_access(user, project_name):
+        click.echo(json.dumps({"status": "error", "message": "Access Denied"}))
+        return
+
+    work_dir = os.path.expanduser(f"~/.enc/run/master/{project_name}")
+    try:
+        # Run and capture for logging
+        proc = subprocess.run(cmd_str, shell=True, cwd=work_dir, capture_output=True, text=True)
+        output = f"RET: {proc.returncode}\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}"
+        log_result(ctx, output)
+        # Still print to user
+        click.echo(output)
+    except Exception as e:
+        log_result(ctx, str(e))
+        click.echo(str(e))
+
+@cli.command("server-project-sync")
+@click.argument("project_name")
+@click.argument("sync_summary")
+@click.pass_context
+def server_project_sync(ctx, project_name, sync_summary):
+    """Internal: Log a sync operation."""
+    check_server_permission(ctx)
+    # Sync is handled by rsync, but we can log the fact it happened and its summary
+    log_result(ctx, sync_summary)
     click.echo(json.dumps({"status": "success"}))
+
+@cli.group()
+def project():
+    """Manage ENC projects."""
+    pass
+
+@project.command("list")
+@click.pass_context
+def list_projects(ctx):
+    """List projects accessible to the current user."""
+    check_server_permission(ctx)
+    import getpass
+    from rich.table import Table
+    
+    user = getpass.getuser()
+    projects = auth.get_user_projects(user)
+    
+    table = Table(title=f"Accessible Projects for {user}")
+    table.add_column("Project Name", style="green")
+    
+    if "*" in projects:
+        table.add_row("[bold goldenrod]ALL PROJECTS (Admin)[/bold goldenrod]")
+    else:
+        for p in projects:
+            table.add_row(p)
+            
+    console.print(table)
 
 @cli.group()
 def user():
     """Manage ENC users."""
     pass
 
-@user.command("add")
-@click.argument("username")
+@user.command("create")
+@click.argument("username", required=False)
+@click.option("--password", help="User password")
+@click.option("--role", type=click.Choice([auth.ROLE_ADMIN, auth.ROLE_DEV]), help="User role")
+@click.option("--ssh-key", help="SSH Public Key")
+@click.option("--json", "json_output", is_flag=True, help="Output in JSON format")
 @click.pass_context
-def add_user(ctx, username):
-    """Add a new restricted user."""
-    # Check if admin permission is available (either running as root/admin or permitted)
+def user_create(ctx, username, password, role, ssh_key, json_output):
+    """Create a new user."""
+    # Check permissions
     check_server_permission(ctx)
     ensure_admin(ctx)
     
-    import subprocess
-    import json
-    import os
+    # Interactive mode if not json and missing args
+    if not json_output and not all([username, password, role]):
+        if not username:
+            username = Prompt.ask("Username")
+        console.print(f"[bold]Creating user: {username}[/bold]")
+        if not role:
+            role = Prompt.ask("Role", choices=[auth.ROLE_ADMIN, auth.ROLE_DEV], default=auth.ROLE_DEV)
+        if not password:
+             password = Prompt.ask("Password", password=True)
+        if not ssh_key:
+             ssh_key = Prompt.ask("SSH Public Key (optional)", default="")
+             if ssh_key == "": ssh_key = None
 
-    console.print(f"[bold]Creating user: {username}[/bold]")
-    password = Prompt.ask("Password (leave empty for key-only)", password=True, default="")
-    ssh_key = Prompt.ask("SSH Public Key (optional)", default="")
-
-    try:
-        # 1. Create System User
-        shell_path = "/usr/local/bin/enc-shell"
-        subprocess.run(["sudo", "adduser", "-D", "-s", shell_path, username], check=True)
-        
-        # 2. Set Password
-        if password:
-            proc = subprocess.Popen(["sudo", "chpasswd"], stdin=subprocess.PIPE)
-            proc.communicate(input=f"{username}:{password}".encode())
-            if proc.returncode != 0:
-                raise Exception("Failed to set password")
+    if not username or not password:
+        if json_output:
+             res = {"status": "error", "message": "Missing username or password"}
+             log_result(ctx, res)
+             click.echo(json.dumps(res))
+             ctx.exit(1)
         else:
-            subprocess.run(["sudo", "passwd", "-l", username], check=False)
+             console.print("[red]Username and password are required.[/red]")
+             ctx.exit(1)
 
-        # 3. Setup SSH
-        user_home = f"/home/{username}"
-        ssh_dir = f"{user_home}/.ssh"
-        subprocess.run(["sudo", "mkdir", "-p", ssh_dir], check=True)
-        
-        if ssh_key:
-            auth_file = f"{ssh_dir}/authorized_keys"
-            # Write key using tee to handle sudo write
-            proc = subprocess.Popen(["sudo", "tee", "-a", auth_file], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
-            proc.communicate(input=f"{ssh_key}\n".encode())
-            
-        # Fix permissions
-        subprocess.run(["sudo", "chown", "-R", f"{username}:{username}", user_home], check=True)
-        subprocess.run(["sudo", "chmod", "700", ssh_dir], check=True)
-        if ssh_key:
-            subprocess.run(["sudo", "chmod", "600", f"{ssh_dir}/authorized_keys"], check=True)
-            
-        # 4. Update Policy
-        policy_file = "/etc/enc/policy.json"
-        
-        # We need to read/write policy. Since we might not own it, we use sudo cat/tee logic
-        # But this script runs primarily as 'admin' who has NOPASSWD sudo.
-        # Python's open() might fail if not root, so we use sudo.
-        
-        current_policy = {"allow_all": [], "users": {}}
-        if os.path.exists(policy_file):
-            try:
-                # Read using cat
-                res = subprocess.run(["sudo", "cat", policy_file], capture_output=True, text=True)
-                if res.returncode == 0:
-                    current_policy = json.loads(res.stdout)
-            except:
-                pass
-
-        # Add user with default permissions if not present
-    # Persist with new schema
-        if username not in current_policy.get("users", {}):
-            if "users" not in current_policy:
-                current_policy["users"] = {}
-            
-            # Default to 'user' role
-            current_policy["users"][username] = {
-                "role": "user",
-                "permissions": ["init", "project", "status"]
-            }
-            
-            # Write back
-            policy_json = json.dumps(current_policy, indent=4)
-            proc = subprocess.Popen(["sudo", "tee", policy_file], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
-            proc.communicate(input=policy_json.encode())
-
-        console.print(f"[bold green]Success:[/bold green] User '{username}' created.")
-
-    except subprocess.CalledProcessError as e:
-        console.print(f"[bold red]Error:[/bold red] System command failed: {e}")
-    except Exception as e:
-        console.print(f"[bold red]Error:[/bold red] {e}")
+    # Use EncServer logic
+    server = EncServer()
+    if server.create_user(username, password, role or "user", ssh_key):
+        if json_output:
+            res = {"status": "success", "username": username}
+            log_result(ctx, res)
+            click.echo(json.dumps(res))
+        else:
+            console.print(f"[bold green]Success:[/bold green] User '{username}' created.")
+    else:
+        if json_output:
+             res = {"status": "error", "message": "Failed to create user"}
+             log_result(ctx, res)
+             click.echo(json.dumps(res))
+        else:
+             console.print(f"[bold red]Failed to create user.[/bold red]")
 
 @user.command("list")
+@click.option("--json", "json_output", is_flag=True, help="Output in JSON format")
 @click.pass_context
-def list_users(ctx):
+def user_list(ctx, json_output):
     """List all managed users."""
     check_server_permission(ctx)
     ensure_admin(ctx)
     from rich.table import Table
-    import json
-    import subprocess
-    import os
 
     try:
-        policy_file = "/etc/enc/policy.json"
-        
-        # Read policy logic
-        policy = {"users": {}}
-        if os.path.exists(policy_file):
-             # Try sudo cat if needed, else normal read
-             try:
-                 with open(policy_file, 'r') as f:
-                     policy = json.load(f)
-             except PermissionError:
-                  res = subprocess.run(["sudo", "cat", policy_file], capture_output=True, text=True)
-                  if res.returncode == 0:
-                      policy = json.loads(res.stdout)
+        users = auth.get_all_users()
+
+        if json_output:
+             users_data = []
+             for u, record in users.items():
+                 role = "user"
+                 if isinstance(record, dict):
+                     role = record.get("role", "user")
+                 users_data.append({"username": u, "role": role})
+                 
+             res = {"status": "success", "users": users_data}
+             log_result(ctx, res)
+             click.echo(json.dumps(res))
+             return
 
         table = Table(title="ENC Users")
         table.add_column("Username", style="cyan")
         table.add_column("Role", style="magenta")
         table.add_column("Permissions")
 
-        for user, record in policy.get("users", {}).items():
+        for user, record in users.items():
             if isinstance(record, dict):
                 role = record.get("role", "user")
                 perms = ", ".join(record.get("permissions", []))
@@ -323,105 +341,62 @@ def list_users(ctx):
         console.print(f"[bold red]Error:[/bold red] {e}")
 
 @user.command("remove")
-@click.argument("username")
+@click.argument("username", required=False)
+@click.option("--json", "json_output", is_flag=True, help="Output in JSON format")
 @click.pass_context
-def remove_user(ctx, username):
+def user_remove(ctx, username, json_output):
     """Remove a restricted user."""
     check_server_permission(ctx)
     ensure_admin(ctx)
-    import subprocess
-    import json
-    import os
     
+    if not username:
+        if json_output:
+             res = {"status": "error", "message": "Missing username"}
+             log_result(ctx, res)
+             click.echo(json.dumps(res))
+             ctx.exit(1)
+        else:
+             username = Prompt.ask("Username to remove")
+
     if username == "admin":
-        console.print("[bold red]Cannot remove admin user.[/bold red]")
-        ctx.exit(1)
+        if json_output:
+             res = {"status": "error", "message": "Cannot remove admin user"}
+             log_result(ctx, res)
+             click.echo(json.dumps(res))
+             ctx.exit(1)
+        else:
+             console.print("[bold red]Cannot remove admin user.[/bold red]")
+             ctx.exit(1)
 
-    console.print(f"[bold red]Removing user: {username}[/bold red]")
+    if not json_output:
+        console.print(f"[bold red]Removing user: {username}[/bold red]")
     
-    try:
-        # 1. Remove System User
-        subprocess.run(["sudo", "deluser", "--remove-home", username], check=True)
-        
-        # 2. Update Policy
-        policy_file = "/etc/enc/policy.json"
-        # Since we modify, we need read then write-back logic
-        # Re-using the logic from 'add' would be better refactoring, but inline for now.
-        
-        current_policy = {}
-        # Read
-        try:
-             with open(policy_file, 'r') as f:
-                 current_policy = json.load(f)
-        except PermissionError:
-              res = subprocess.run(["sudo", "cat", policy_file], capture_output=True, text=True)
-              if res.returncode == 0:
-                  current_policy = json.loads(res.stdout)
-
-        if username in current_policy.get("users", {}):
-            del current_policy["users"][username]
-            
-            # Write back
-            policy_json = json.dumps(current_policy, indent=4)
-            proc = subprocess.Popen(["sudo", "tee", policy_file], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
-            proc.communicate(input=policy_json.encode())
-
-        console.print(f"[bold green]Success:[/bold green] User '{username}' removed.")
-
-    except subprocess.CalledProcessError:
-        console.print(f"[bold yellow]Warning:[/bold yellow] System user might not exist or failed to remove.")
-    except Exception as e:
-        console.print(f"[bold red]Error:[/bold red] {e}")
-
-@cli.command()
-def status():
-    """Show the current security status."""
-    console.print(Panel("System Locked", title="ENC Status", style="red"))
-
-@cli.command("server-user-create")
-@click.argument("username")
-@click.argument("password")
-@click.option("--role", default="user", help="Role: admin or user")
-@click.pass_context
-def server_user_create(ctx, username, password, role):
-    """Create a new user (Admin only)."""
-    ensure_admin(ctx)
-    server = EncServer()
-    if server.create_user(username, password, role):
-        console.print(json.dumps({"status": "success", "username": username}))
-    else:
-        # JSON output for client parsing if needed, but console printed errors already
-        console.print(json.dumps({"status": "error", "message": "Failed to create user"}))
-
-@cli.command("server-user-delete")
-@click.argument("username")
-@click.pass_context
-def server_user_delete(ctx, username):
-    """Delete a user (Admin only)."""
-    ensure_admin(ctx)
     server = EncServer()
     if server.delete_user(username):
-        console.print(json.dumps({"status": "success", "username": username}))
+        if json_output:
+            res = {"status": "success", "username": username}
+            log_result(ctx, res)
+            click.echo(json.dumps(res))
+        else:
+            console.print(f"[bold green]Success:[/bold green] User '{username}' removed.")
     else:
-        console.print(json.dumps({"status": "error", "message": "Failed to delete user"}))
+        if json_output:
+             res = {"status": "error", "message": "Failed to delete user"}
+             log_result(ctx, res)
+             click.echo(json.dumps(res))
+        else:
+             console.print(f"[bold yellow]Warning:[/bold yellow] System user might not exist or failed to remove.")
 
-@cli.group()
-def show():
-    """Show system information."""
-    pass
-
-@show.command("users")
+@cli.command()
 @click.pass_context
-def show_users(ctx):
-    """Show all managed users (Admin only)."""
-    # Re-use the logic from list_users
-    # We can invoke it or just duplicate the logic. Invoking is cleaner but click contexts can be tricky.
-    # We will just call the function implementation if we extracted it, but for now we'll route to it.
-    ctx.invoke(list_users)
+def status(ctx):
+    """Show the current security status."""
+    check_server_permission(ctx)
+    res = "System Locked"
+    log_result(ctx, {"status": res})
+    console.print(Panel(res, title="ENC Status", style="red"))
+
+
 
 def main():
-    # Hook checking into individual commands or group execution
-    # Click doesn't have a simple global pre-invoke for groups without custom class
-    # So we call it explicitly or use a callback. 
-    # For simplicity in this refactor, let's just make the commands call it.
     cli()

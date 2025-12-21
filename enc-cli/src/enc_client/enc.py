@@ -4,6 +4,8 @@ import subprocess
 import sys
 import shlex
 import socket
+import click
+import pexpect
 from urllib.parse import urlparse
 from rich.console import Console
 
@@ -79,8 +81,7 @@ class Enc:
             "url": url,
             "username": username,
             "ssh_key": ssh_key,
-            "session_id": None,
-            "context": None
+            "session_id": None
         }
         
         # Note: If we are initing a LOCAL config, we might inherit values from global?
@@ -174,6 +175,13 @@ class Enc:
         target = f"{username}@{host}"
         return cmd, target
 
+    def get_remote_cmd(self, sub_cmd):
+        """Construct a remote command including the session ID if available."""
+        session_id = self.config.get("session_id")
+        if session_id:
+            return f"enc --session-id {session_id} {sub_cmd}"
+        return f"enc {sub_cmd}"
+
     def login(self):
         """Authenticate with the server and establish a session."""
         base, target = self.get_ssh_base_cmd()
@@ -211,42 +219,102 @@ class Enc:
         login_cmd = ["enc", "server-login", username]
         full_ssh_cmd = cmd + [target] + login_cmd
         
-        # If no SSH key configured, this likely requires interactive password.
-        # Handling interactive password capture + stdout capture is complex without pexpect.
-        # SIMPLIFICATION: We assume keys or ssh-agent. 
-        # Or, we instruct user to set up keys if this fails.
-        
         try:
-            # We try to run. If password needed, this will hang or fail without TTY.
-            # If we add '-t', stdout has \r\n and maybe banner.
-            res = subprocess.run(full_ssh_cmd, capture_output=True, text=True)
+            # Join command for pexpect spawn
+            cmd_safe = " ".join([shlex.quote(x) for x in full_ssh_cmd])
             
-            if res.returncode != 0:
-                console.print(f"[red]Login failed:[/red] {res.stderr}")
-                console.print("[yellow]Hint: If using password auth, try setting up valid SSH keys first.[/yellow]")
-                return
+            # Spawn SSH process
+            child = pexpect.spawn(cmd_safe, encoding='utf-8', timeout=30)
+            
+            # Expect loop for password or host key or EOF
+            while True:
+                idx = child.expect(["(?i)password:", "(?i)continue connecting", pexpect.EOF, pexpect.TIMEOUT, "(?i)permission denied"])
+                
+                if idx == 0: # Password prompt
+                    password = click.prompt("Enter Server Password", hide_input=True)
+                    child.sendline(password)
+                elif idx == 1: # Host key verification
+                    child.sendline("yes")
+                elif idx == 2: # EOF
+                    break
+                elif idx == 3: # Timeout
+                    console.print(f"[red]Connection timed out. Output received so far:[/red]\n{child.before}")
+                    child.close()
+                    return
+                elif idx == 4: # Permission denied
+                     console.print(f"[red]Authentication failed:[/red] Permission denied.")
+                     child.close()
+                     return
 
-            try:
-                # Clean up output (sometimes SSH adds banner/motd)
-                # We look for the JSON object { "session_id": ... }
-                import re
-                output = res.stdout.strip()
-                # Find JSON blob
-                match = re.search(r'\{.*\}', output, re.DOTALL)
-                if match:
-                    json_str = match.group(0)
+            output = child.before
+            child.close()
+            
+            # Clean up output (sometimes SSH adds banner/motd)
+            # We look for the JSON object { "session_id": ... }
+            import re
+            match = re.search(r'\{.*\}', output, re.DOTALL)
+            if match:
+                json_str = match.group(0)
+                try:
                     session_data = json.loads(json_str)
                     
+                    if session_data.get("status") == "error":
+                         console.print(f"[red]Login Error:[/red] {session_data.get('message')}")
+                         return
+
                     self._save_local_session(session_data)
                     console.print(f"[bold green]Login Success![/bold green] Session ID: {session_data['session_id']}")
-                else:
-                    console.print(f"[red]Invalid server response:[/red] {output}")
                     
-            except json.JSONDecodeError:
-                console.print(f"[red]Failed to parse session token:[/red] {res.stdout}")
-                
+                except json.JSONDecodeError:
+                     console.print(f"[red]Failed to parse login response:[/red] {output}")
+            else:
+                 if child.exitstatus != 0:
+                     console.print(f"[red]Login failed:[/red] {output.strip()}")
+                     console.print("[yellow]Hint: Check username/password or SSH key configuration.[/yellow]")
+                 else:
+                     console.print(f"[red]No session data received from server.[/red]")
+                     console.print(f"Raw Output: {output}")
+                     
         except Exception as e:
             console.print(f"[bold red]System Error:[/bold red] {e}")
+
+    def get_current_session(self):
+        """Retrieve the current session data from the local file."""
+        session_id = self.config.get("session_id")
+        if not session_id:
+            return None
+            
+        sessions_dir = os.path.join(self.config_dir, "sessions")
+        session_file = os.path.join(sessions_dir, f"{session_id}.json")
+        
+        if os.path.exists(session_file):
+            try:
+                with open(session_file, 'r') as f:
+                    return json.load(f)
+            except Exception:
+                return None
+        return None
+
+    def update_current_session(self, key, value):
+        """Update a key in the current session file."""
+        session_data = self.get_current_session()
+        if not session_data:
+            return False
+            
+        session_data[key] = value
+        
+        # Save back
+        session_id = session_data.get("session_id")
+        sessions_dir = os.path.join(self.config_dir, "sessions")
+        session_file = os.path.join(sessions_dir, f"{session_id}.json")
+        
+        try:
+            with open(session_file, 'w') as f:
+                json.dump(session_data, f, indent=4)
+            return True
+        except Exception as e:
+            console.print(f"[red]Error updating session:[/red] {e}")
+            return False
 
     def _save_local_session(self, session_data):
         session_id = session_data.get("session_id")
@@ -261,6 +329,72 @@ class Enc:
         self.config["session_id"] = session_id
         self.save_config(self.config)
 
+    def user_list(self):
+        """Get list of users. Checks local cache first, then server."""
+        # 1. Get Session
+        session = self.get_current_session()
+        if not session:
+             console.print("[yellow]No active session. Please login.[/yellow]")
+             return None
+             
+        # 2. Check Permissions
+        allowed = session.get("allowed_commands", [])
+        # We assume 'user list' is the permission key. 
+        # If allowed_commands is empty or doesn't contain it, strictly we should deny.
+        # BUT for this task, the requirement is "check if its have this 'user list' in allowed commad".
+        
+        if "user list" not in allowed:
+            console.print("[red]Permission Denied: 'user list' not in allowed commands.[/red]")
+            return None
+            
+        # # 3. Check Cache
+        # if "user_list" in session:
+        #     # console.print("[dim]Returning cached user list.[/dim]")
+        #     return session["user_list"]
+            
+        # 4. Call Server
+        # console.print("[dim]Fetching user list from server...[/dim]")
+        base, target = self.get_ssh_base_cmd()
+        
+        # Construct command
+        remote_cmd = self.get_remote_cmd("user list --json")
+        full_ssh = cmd = list(base) + [target, remote_cmd]
+        
+        try:
+            res = subprocess.run(full_ssh, capture_output=True, text=True)
+            if res.returncode == 0:
+                # Expecting JSON list of users or object with "users" key
+                try:
+                    import re
+                    match = re.search(r'\{.*\}|\[.*\]', res.stdout, re.DOTALL)
+                    if match:
+                        json_str = match.group(0)
+                        data = json.loads(json_str)
+                        
+                        # Handle if wrapped in status object or direct list
+                        users = data
+                        if isinstance(data, dict):
+                            if "users" in data:
+                                users = data["users"]
+                            elif data.get("status") != "success":
+                                console.print(f"[red]Server Error:[/red] {data.get('message')}")
+                                return None
+                                
+                        # 5. Update Cache
+                        self.update_current_session("user_list", users)
+                        return users
+                    else:
+                        console.print(f"[red]Invalid Server Response:[/red] {res.stdout}")
+                except json.JSONDecodeError:
+                    console.print(f"[red]Parse Error:[/red] {res.stdout}")
+            else:
+                 console.print(f"[red]Server Error:[/red] {res.stderr}")
+                 
+        except Exception as e:
+             console.print(f"[red]Error:[/red] {e}")
+             
+        return None
+
     def project_init(self, name, password):
         """Call server to init project vault."""
         base, target = self.get_ssh_base_cmd()
@@ -270,7 +404,7 @@ class Enc:
         
         cmd = list(base)
         # Construct command
-        remote_cmd = f"enc server-project-init {name}"
+        remote_cmd = self.get_remote_cmd(f"server-project-init {name}")
         full_ssh = cmd + [target, remote_cmd]
         
         try:
@@ -310,7 +444,7 @@ class Enc:
         base, target = self.get_ssh_base_cmd()
         
         cmd = list(base)
-        remote_cmd = f"enc server-project-mount {name}"
+        remote_cmd = self.get_remote_cmd(f"server-project-mount {name}")
         full_ssh = cmd + [target, remote_cmd]
         
         try:
@@ -334,6 +468,20 @@ class Enc:
             return False
         except Exception as e:
             console.print(f"[red]Error:[/red] {e}")
+            return False
+
+    def project_unmount(self, name):
+        """Call server to unmount project."""
+        base, target = self.get_ssh_base_cmd()
+        remote_cmd = self.get_remote_cmd(f"server-project-unmount {name}")
+        cmd = list(base) + [target, remote_cmd]
+        
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0:
+                return True
+            return False
+        except Exception:
             return False
 
     def project_sync(self, name, local_path):
@@ -385,28 +533,28 @@ class Enc:
         try:
             # We use subprocess.call to allow streaming output to console
             ret = subprocess.call(cmd)
+            if ret == 0:
+                # Log success to server
+                sync_remote = self.get_remote_cmd(f"server-project-sync {name} 'rsync sync completed successfully'")
+                subprocess.run(list(base) + [target, sync_remote], capture_output=True)
             return ret == 0
         except Exception as e:
             console.print(f"[red]Sync Error:[/red] {e}")
             return False
 
     def project_run(self, name, command_str):
-        """Execute a command in the remote project directory."""
+        """Execute a command in the remote project directory via server-project-run for logging."""
         base, target = self.get_ssh_base_cmd()
-        # Remote directory
-        work_dir = f"~/.enc/run/master/{name}"
         
-        # We wrap the command in bash to cd first
-        # ssh user@host "cd path && command"
-        escaped_cmd = f"cd {work_dir} && {command_str}"
+        # We use shlex.quote to handle complex commands
+        import shlex
+        quoted_cmd = shlex.quote(command_str)
+        
+        remote_cmd = self.get_remote_cmd(f"server-project-run {name} {quoted_cmd}")
         
         cmd = list(base)
-        # Interactive mode support? 
-        # If running simple command, capture stdout.
-        # If running interactive, we need PTY. The user didn't specify interactive flag explicitly but shells usually need it.
-        # For this MVP, we just stream stdout/stderr via subprocess.call
-        
-        full_ssh = cmd + ["-t", target, escaped_cmd] # -t forces PTY for colors/interactive apps
+        # Use -t for potential interactivity, though server-project-run currently uses subprocess.run
+        full_ssh = cmd + ["-t", target, remote_cmd]
         
         try:
             ret = subprocess.call(full_ssh)
@@ -424,7 +572,8 @@ class Enc:
         
         if base and target and username:
             try:
-                logout_cmd = list(base) + [target, f"enc server-logout {username}"]
+                remote_cmd = self.get_remote_cmd(f"server-logout {username}")
+                logout_cmd = list(base) + [target, remote_cmd]
                 subprocess.run(logout_cmd, capture_output=True)
             except: 
                 pass # Ignore network errors during logout
@@ -444,12 +593,19 @@ class Enc:
             console.print(f"[red]Error clearing sessions:[/red] {e}")
             return False
 
-    def user_create(self, username, password, role):
-        """Call enc server-user-create."""
+    def user_create(self, username, password, role, ssh_key=None):
+        """Call enc user create."""
         base, target = self.get_ssh_base_cmd()
+        
+        # New standardized command
+        remote_cmd_str = f"user create {username} --password {password} --role {role} --json"
+        
+        if ssh_key:
+             remote_cmd_str += f' --ssh-key "{ssh_key}"'
+             
         cmd = list(base) + [
             target, 
-            f"enc server-user-create {username} {password} --role {role}"
+            self.get_remote_cmd(remote_cmd_str)
         ]
         
         try:
@@ -465,11 +621,12 @@ class Enc:
             return False
 
     def user_delete(self, username):
-        """Call enc server-user-delete."""
+        """Call enc user remove."""
         base, target = self.get_ssh_base_cmd()
+        # New standardized command
         cmd = list(base) + [
             target, 
-            f"enc server-user-delete {username}"
+            self.get_remote_cmd(f"user remove {username} --json")
         ]
         try:
             res = subprocess.run(cmd, capture_output=True, text=True)

@@ -58,5 +58,26 @@ class EncRestrictedShell(cmd.Cmd):
             self.run()
 
 if __name__ == '__main__':
-    # Ensure this script is executable
-    EncRestrictedShell().run()
+    # usage: enc-shell [-c "command"]
+    if len(sys.argv) > 1 and sys.argv[1] == '-c':
+        if len(sys.argv) > 2:
+            cmd_line = sys.argv[2]
+            # Restrict to 'enc ' commands only
+            if cmd_line.startswith("enc ") or cmd_line == "enc":
+                shell = EncRestrictedShell()
+                # Run the specific command
+                # We strip 'enc ' prefix because do_enc expects the arg
+                arg = cmd_line[4:].strip()
+                if arg:
+                    shell.do_enc(arg)
+                else:
+                    # Just 'enc' -> run nothing or help?
+                    # interactive mode doesn't make sense here.
+                    pass
+            else:
+                 print(f"Restricted shell: Command not allowed: {cmd_line}")
+                 sys.exit(1)
+        else:
+            sys.exit(1)
+    else:
+        EncRestrictedShell().run()
