@@ -277,14 +277,25 @@ def project_list():
         
     table = Table(title="Your Projects")
     table.add_column("Project Name", style="cyan")
-    table.add_column("Mount Path", style="green")
-    table.add_column("Exec", style="magenta")
+    table.add_column("Local Mount", style="green")
+    table.add_column("Server Mount", style="dim")
+    table.add_column("Exec Point", style="magenta")
     
-    for name, meta in projects.items():
+    for proj in projects:
+        name = proj.get("name")
+        local_mnt = proj.get("local_mount_point") or ""
+        server_mnt = proj.get("server_mount_point") or ""
+        exec_pt = proj.get("exec_entry_point") or ""
+        is_active = proj.get("is_active")
+        
+        style = "blue" if is_active else None
+        
         table.add_row(
             name,
-            str(meta.get("mount_path", "N/A")),
-            str(meta.get("exec", "None"))
+            local_mnt,
+            server_mnt,
+            exec_pt,
+            style=style
         )
         
     console.print(table)
@@ -303,6 +314,11 @@ def project_mount(name, directory, password):
         console.print("[red]Permission Denied: You are not allowed to mount projects.[/red]")
         return
     
+    # Check if project is already mounted to avoid asking for password unnecessarily
+    if enc_manager.is_project_active(name):
+        console.print(f"[yellow]Project '{name}' is already mounted locally.[/yellow]")
+        return
+
     if not password:
         password = click.prompt("Enter Project Password", hide_input=True)
 
@@ -315,9 +331,8 @@ def project_mount(name, directory, password):
         console.print(f"[bold red]Mount failed.[/bold red]")
 
 @project_group.command("unmount")
-@click.argument("name")
-@click.argument("directory", default=".", type=click.Path(file_okay=False))
-def project_unmount(name, directory):
+@click.argument("name", required=False)
+def project_unmount(name):
     """Unmount and close bridge for a project."""
     if not enc_manager.config.get("session_id"):
         console.print("[yellow]Please login first.[/yellow]")
@@ -328,7 +343,7 @@ def project_unmount(name, directory):
         return
         
     console.print(f"Unmounting project '[cyan]{name}[/cyan]'...")
-    if enc_manager.project_unmount(name, directory):
+    if enc_manager.project_unmount(name):
         console.print(f"[bold green]Project unmounted and bridge closed.[/bold green]")
 
 @project_group.command("sync")

@@ -10,6 +10,7 @@ import click
 import pexpect
 from urllib.parse import urlparse
 from rich.console import Console
+from enc_client.session import Session
 
 console = Console()
 
@@ -24,6 +25,7 @@ class Enc:
         
         self.config, self.active_config_path = self.load_config()
         self.config_dir = os.path.dirname(self.active_config_path)
+        self.session_manager = Session(self.config_dir)
 
     def load_config(self):
         """
@@ -110,18 +112,7 @@ class Enc:
     def get_session_data(self):
         """Load session data from the session file."""
         session_id = self.config.get("session_id")
-        if not session_id:
-            return None
-            
-        session_file = os.path.join(self.config_dir, "sessions", f"{session_id}.json")
-        if not os.path.exists(session_file):
-            return None
-            
-        try:
-            with open(session_file, 'r') as f:
-                return json.load(f)
-        except Exception:
-            return None
+        return self.session_manager.load_session(session_id)
 
     def check_permission(self, command):
         """Check if the current user has permission to run the command."""
@@ -308,61 +299,22 @@ class Enc:
         except Exception as e:
             console.print(f"[bold red]System Error:[/bold red] {e}")
 
-    def get_current_session(self):
-        """Retrieve the current session data from the local file."""
+    def update_project_info(self, project_name, local_dir=None, server_mount=None, exec_point=None):
+        """Update session file with project info."""
         session_id = self.config.get("session_id")
-        if not session_id:
-            return None
-            
-        sessions_dir = os.path.join(self.config_dir, "sessions")
-        session_file = os.path.join(sessions_dir, f"{session_id}.json")
-        
-        if os.path.exists(session_file):
-            try:
-                with open(session_file, 'r') as f:
-                    return json.load(f)
-            except Exception:
-                return None
-        return None
-
-    def update_current_session(self, key, value):
-        """Update a key in the current session file."""
-        session_data = self.get_current_session()
-        if not session_data:
-            return False
-            
-        session_data[key] = value
-        
-        # Save back
-        session_id = session_data.get("session_id")
-        sessions_dir = os.path.join(self.config_dir, "sessions")
-        session_file = os.path.join(sessions_dir, f"{session_id}.json")
-        
-        try:
-            with open(session_file, 'w') as f:
-                json.dump(session_data, f, indent=4)
-            return True
-        except Exception as e:
-            console.print(f"[red]Error updating session:[/red] {e}")
-            return False
+        return self.session_manager.update_project_info(session_id, project_name, local_dir, server_mount, exec_point)
 
     def _save_local_session(self, session_data):
-        session_id = session_data.get("session_id")
-        sessions_dir = os.path.join(self.config_dir, "sessions")
-        os.makedirs(sessions_dir, exist_ok=True)
-        
-        # Save session file
-        with open(os.path.join(sessions_dir, f"{session_id}.json"), 'w') as f:
-            json.dump(session_data, f, indent=4)
+        self.session_manager.save_session(session_data)
             
         # Update current config context
-        self.config["session_id"] = session_id
+        self.config["session_id"] = session_data.get("session_id")
         self.save_config(self.config)
 
     def user_list(self):
         """Get list of users. Checks local cache first, then server."""
         # 1. Get Session
-        session = self.get_current_session()
+        session = self.get_session_data()
         if not session:
              console.print("[yellow]No active session. Please login.[/yellow]")
              return None
@@ -411,7 +363,7 @@ class Enc:
                                 return None
                                 
                         # 5. Update Cache
-                        self.update_current_session("user_list", users)
+                        self.session_manager.update_session_key(self.config.get("session_id"), "user_list", users)
                         return users
                     else:
                         console.print(f"[red]Invalid Server Response:[/red] {res.stdout}")
@@ -457,8 +409,21 @@ class Enc:
                 
             console.print(f"[yellow]Backing up existing files to {backup_dir}...[/yellow]")
             # Move project_dir (source) to backup_dir (dest)
-            # Since we removed backup_dir, this acts as a rename/move of the folder
-            shutil.move(project_dir, backup_dir)
+            # Use copytree + rmtree to be robust against cross-device links and ghost files
+            try:
+                shutil.copytree(project_dir, backup_dir)
+                
+                def on_rm_error(func, path, exc_info):
+                    # Ignore FileNotFoundError (race condition/ghost files like ._*)
+                    if not os.path.exists(path):
+                        return
+                    # Re-raise others
+                    raise exc_info[1]
+
+                shutil.rmtree(project_dir, onerror=on_rm_error)
+            except Exception as e:
+                console.print(f"[red]Backup failed:[/red] {e}")
+                return False
             
             # Recreate empty project_dir for mounting
             os.makedirs(project_dir)
@@ -505,6 +470,9 @@ class Enc:
                                     os.rmdir(backup_dir)
                                     
                                 console.print(f"[green]Project {name} initialized successfully.[/green]")
+
+                                # update session file with project info
+                                self.update_project_info(name, local_dir=project_dir, server_mount=server_mount_point)
                             
                                 return True
                     else:
@@ -522,6 +490,12 @@ class Enc:
 
     def project_mount(self, name, password, local_dir="."):
         """Call server to mount project and establish local SSHFS bridge."""
+        # Check if project active locally
+        session_id = self.config.get("session_id")
+        if self.session_manager.is_project_active(session_id, name):
+             console.print(f"[yellow]Project '{name}' is already mounted locally.[/yellow]")
+             return False
+
         base, target = self.get_ssh_base_cmd()
         
         cmd = list(base)
@@ -547,8 +521,11 @@ class Enc:
                         if server_mount_point:
                             from enc_client.sshfs_handler import SshfsHandler
                             ssh_bridge = SshfsHandler(self.config)
-                            return ssh_bridge.mount_project(name, local_dir, server_mount_point)
-                        return True
+                            success = ssh_bridge.mount_project(name, local_dir, server_mount_point)
+                            
+                            if success:
+                                self.update_project_info(name, local_dir=os.path.abspath(local_dir), server_mount=server_mount_point)
+                                return True
             except:
                 pass
             return False
@@ -556,12 +533,46 @@ class Enc:
             console.print(f"[red]Error:[/red] {e}")
             return False
 
-    def project_unmount(self, name, local_dir="."):
+            return False
+
+    def project_unmount(self, name=None, local_dir="."):
         """Call server to unmount project and close local SSHFS bridge."""
+        # Detect project from CWD if name not provided
+        if not name:
+             session_id = self.config.get("session_id")
+             cwd = os.path.abspath(os.getcwd())
+             name = self.session_manager.get_project_by_path(session_id, cwd)
+             if not name:
+                 # Try finding via local_dir arg if different from .
+                 name = self.session_manager.get_project_by_path(session_id, os.path.abspath(local_dir))
+             
+             if not name:
+                 console.print("[red]No active project found in current directory. Please specify project name.[/red]")
+                 return False
+
+        # Validate if project is actually active (locally mounted) before unmount
+        # This prevents unmounting a project that isn't running locally (as requested)
+        session_id = self.config.get("session_id")
+        if not self.session_manager.is_project_active(session_id, name):
+             console.print(f"[yellow]Project '{name}' is not currently active.[/yellow]")
+             return False
+
         # 1. Close local bridge first
         from enc_client.sshfs_handler import SshfsHandler
         ssh_bridge = SshfsHandler(self.config)
-        ssh_bridge.unmount_project(local_dir)
+        # We need the local dir for unmount. If we inferred name, we need exact path?
+        # SSHFS unmount usually takes path.
+        # If we have name, look up path in session?
+        session_id = self.config.get("session_id")
+        session_data = self.session_manager.load_session(session_id)
+        
+        project_local_path = local_dir 
+        if session_data and "projects" in session_data and name in session_data["projects"]:
+             saved_path = session_data["projects"][name].get("local_mount_point")
+             if saved_path:
+                 project_local_path = saved_path
+
+        ssh_bridge.unmount_project(project_local_path)
 
         # 2. Call server to unmount vault
         base, target = self.get_ssh_base_cmd()
@@ -570,9 +581,9 @@ class Enc:
         
         try:
             res = subprocess.run(cmd, capture_output=True, text=True)
-            if res.returncode == 0:
-                console.print(f"[green]Remote project '{name}' unmounted.[/green]")
-                return True
+            # Remove from session tracking
+            self.session_manager.remove_project_mount(session_id, name)
+            
             if res.returncode == 0:
                 console.print(f"[green]Remote project '{name}' unmounted.[/green]")
                 return True
@@ -596,6 +607,9 @@ class Enc:
                     data = json.loads(match.group(0))
                     if data.get("status") == "success":
                         console.print(f"[green]Project '{name}' deleted successfully.[/green]")
+                        # Remove from session entirely
+                        session_id = self.config.get("session_id")
+                        self.session_manager.remove_project(session_id, name)
                         return True
                     else:
                         console.print(f"[red]Server Error:[/red] {data.get('message', 'Unknown Error')}")
@@ -608,12 +622,19 @@ class Enc:
             console.print(f"[red]Error:[/red] {e}")
             return False
 
+    def is_project_active(self, name):
+        """Check if project is active in current session."""
+        session_id = self.config.get("session_id")
+        return self.session_manager.is_project_active(session_id, name)
+
     def project_list(self):
-        """Get the list of projects from the server."""
+        """Get the merged list of projects (Server + Local Session)."""
+        # 1. Fetch Server List
         base, target = self.get_ssh_base_cmd()
         remote_cmd = self.get_remote_cmd("server-project-list")
         cmd = list(base) + [target, remote_cmd]
         
+        server_projects = {}
         try:
             res = subprocess.run(cmd, capture_output=True, text=True)
             if res.returncode == 0:
@@ -621,16 +642,39 @@ class Enc:
                 if match:
                     data = json.loads(match.group(0))
                     if data.get("status") == "success":
-                        return data.get("projects", {})
-                    else:
-                        console.print(f"[red]Server Error:[/red] {data.get('message', 'Unknown Error')}")
-                else:
-                    console.print(f"[red]Invalid Response:[/red] {res.stdout}")
-            else:
-                console.print(f"[red]Remote Error (Code {res.returncode}):[/red] {res.stderr}")
-            return None
+                        server_projects = data.get("projects", {})
         except Exception:
-            return None
+            pass # Use empty server list if failed
+
+        # 2. Load Local Session
+        session_id = self.config.get("session_id")
+        session_data = self.session_manager.load_session(session_id)
+        local_projects = {}
+        if session_data and "projects" in session_data:
+            local_projects = session_data["projects"]
+
+        # 3. Merge
+        merged_list = []
+        
+        for name, meta in server_projects.items():
+            entry = {
+                "name": name,
+                "server_mount_point": meta.get("mount_path", ""),
+                "exec_entry_point": meta.get("exec", ""),
+                "local_mount_point": "",
+                "is_active": False
+            }
+            
+            # Merge local info
+            if name in local_projects:
+                local_info = local_projects[name]
+                if local_info.get("local_mount_point"):
+                    entry["local_mount_point"] = local_info.get("local_mount_point")
+                    entry["is_active"] = True 
+            
+            merged_list.append(entry)
+            
+        return merged_list
 
     def project_sync(self, name, local_path):
         """Sync files using rsync over SSH."""
@@ -727,19 +771,11 @@ class Enc:
                 pass # Ignore network errors during logout
         
         # Clear local
-        sessions_dir = os.path.join(self.config_dir, "sessions")
-        try:
-            import glob
-            files = glob.glob(os.path.join(sessions_dir, "*.json"))
-            for f in files:
-                os.remove(f)
-            
+        if self.session_manager.clear_all_sessions():
             self.config["session_id"] = None
             self.save_config(self.config)
             return True
-        except Exception as e:
-            console.print(f"[red]Error clearing sessions:[/red] {e}")
-            return False
+        return False
 
     def user_create(self, username, password, role, ssh_key=None):
         """Call enc user create."""
