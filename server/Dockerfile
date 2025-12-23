@@ -39,7 +39,10 @@ RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/
     sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config && \
     sed -i 's/#StrictModes yes/StrictModes no/' /etc/ssh/sshd_config && \
-    sed -i 's/Subsystem.*sftp.*internal-sftp/Subsystem sftp \/usr\/lib\/ssh\/sftp-server/' /etc/ssh/sshd_config
+    sed -i 's/Subsystem.*sftp.*internal-sftp/Subsystem sftp \/usr\/lib\/ssh\/sftp-server/' /etc/ssh/sshd_config && \
+    echo "ClientAliveInterval 30" >> /etc/ssh/sshd_config && \
+    echo "ClientAliveCountMax 3" >> /etc/ssh/sshd_config && \
+    echo "TCPKeepAlive yes" >> /etc/ssh/sshd_config
 
 # Create admin user
 RUN adduser -D -s /bin/bash admin && \

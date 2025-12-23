@@ -430,6 +430,22 @@ class Enc:
 
         # check if project_dir has any files or folders
         backup_dir = None
+        try:
+             # Trigger potential OSError before logic
+             if os.path.exists(project_dir):
+                 os.listdir(project_dir)
+        except OSError as e:
+            if e.errno == 6: # Device not configured
+                 console.print(f"[yellow]Detected zombie mount at {project_dir}. Attempting cleanup...[/yellow]")
+                 try:
+                     subprocess.run(["umount", "-f", project_dir], check=True)
+                     console.print("[green]Cleanup successful.[/green]")
+                 except Exception:
+                     console.print(f"[red]Failed to clean up zombie mount. Please run 'umount -f {project_dir}' manually.[/red]")
+                     return False
+            else:
+                 raise e
+
         if os.path.exists(project_dir) and os.listdir(project_dir):
             # create a backup of project_dir contents
             # We move the entire folder to backup_path to be safe/atomic
@@ -557,10 +573,39 @@ class Enc:
             if res.returncode == 0:
                 console.print(f"[green]Remote project '{name}' unmounted.[/green]")
                 return True
+            if res.returncode == 0:
+                console.print(f"[green]Remote project '{name}' unmounted.[/green]")
+                return True
             else:
                 console.print(f"[red]Remote unmount failed:[/red] {res.stderr}")
                 return False
         except Exception:
+            return False
+
+    def start_project_removal(self, name):
+        """Call server to permanently remove project."""
+        base, target = self.get_ssh_base_cmd()
+        remote_cmd = self.get_remote_cmd(f"server-project-remove {name}")
+        cmd = list(base) + [target, remote_cmd]
+        
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0:
+                match = re.search(r'\{.*\}', res.stdout, re.DOTALL)
+                if match:
+                    data = json.loads(match.group(0))
+                    if data.get("status") == "success":
+                        console.print(f"[green]Project '{name}' deleted successfully.[/green]")
+                        return True
+                    else:
+                        console.print(f"[red]Server Error:[/red] {data.get('message', 'Unknown Error')}")
+                else:
+                    console.print(f"[red]Invalid Response:[/red] {res.stdout}")
+            else:
+                console.print(f"[red]Remote Error:[/red] {res.stderr}")
+            return False
+        except Exception as e:
+            console.print(f"[red]Error:[/red] {e}")
             return False
 
     def project_list(self):

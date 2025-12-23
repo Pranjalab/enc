@@ -46,12 +46,10 @@ class SshfsHandler:
             remote_path,
             str(local_path),
             "-p", str(port),
-            "-o", "cache=yes",
-            "-o", "auto_cache",
-            "-o", "reconnect",
-            "-o", "ServerAliveInterval=15",
+            "-o", "ServerAliveInterval=30",
             "-o", "ServerAliveCountMax=3",
-            "-o", "StrictHostKeyChecking=no"
+            "-o", "StrictHostKeyChecking=no",
+            "-o", "UserKnownHostsFile=/dev/null"
         ]
 
         ssh_key = self.config.get("ssh_key")

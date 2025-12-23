@@ -9,7 +9,7 @@
             "permissions": [
                 "*"
             ],
-            "projects": []
+            "projects": {}
         }
     }
 }

@@ -190,7 +190,9 @@ def project_group():
 
 @project_group.command("init")
 @click.argument("name", required=False)
-def project_init(name):
+@click.option("--directory", "-d", default=None, help="Project directory path")
+@click.option("--password", "-p", default=None, help="Project password (skip prompt)")
+def project_init(name, directory, password):
     """Initialize a new encrypted project on server."""
     # Check login first
     if not enc_manager.config.get("session_id"):
@@ -213,7 +215,10 @@ def project_init(name):
         return
         
     # Ask for project directory
-    project_dir = click.prompt("Enter Project Directory", default=".", type=click.Path(file_okay=False))
+    if directory:
+        project_dir = directory
+    else:
+        project_dir = click.prompt("Enter Project Directory", default=".", type=click.Path(file_okay=False))
     
     project_dir = os.path.abspath(project_dir)
 
@@ -229,13 +234,20 @@ def project_init(name):
             border_style="red"
         ))
         return
-    # Ask for password with confirmation and validation
-    while True:
-        password = click.prompt("Enter Project Password", hide_input=True, confirmation_prompt=True)
+    # Handle password
+    if password:
         is_strong, msg = is_strong_password(password)
-        if is_strong:
-            break
-        console.print(f"[red]{msg}[/red]")
+        if not is_strong:
+             console.print(f"[red]Provided password is weak: {msg}[/red]")
+             return
+    else:
+        # Ask for password with confirmation and validation
+        while True:
+            password = click.prompt("Enter Project Password", hide_input=True, confirmation_prompt=True)
+            is_strong, msg = is_strong_password(password)
+            if is_strong:
+                break
+            console.print(f"[red]{msg}[/red]")
 
     console.print(f"Initializing project '[cyan]{name}[/cyan]' in '[cyan]{project_dir}[/cyan]'...")
     # Note: Currently server logic might not use project_dir for vault creation, 
@@ -277,11 +289,11 @@ def project_list():
         
     console.print(table)
 
-@project_group.command("dev")
+@project_group.command("mount")
 @click.argument("name")
-@click.argument("directory", default=".", type=click.Path(file_okay=False))
-@click.password_option()
-def project_dev(name, directory, password):
+@click.argument("directory", required=False, default=".", type=click.Path(file_okay=False))
+@click.option("--password", "-p", default=None, help="Project password (skip prompt)")
+def project_mount(name, directory, password):
     """Mount project for development in a specific directory."""
     if not enc_manager.config.get("session_id"):
         console.print("[yellow]Please login first.[/yellow]")
@@ -290,6 +302,11 @@ def project_dev(name, directory, password):
     if not enc_manager.check_permission("server-project-mount"):
         console.print("[red]Permission Denied: You are not allowed to mount projects.[/red]")
         return
+    
+    if not password:
+        password = click.prompt("Enter Project Password", hide_input=True)
+
+    directory = os.path.abspath(directory)
         
     console.print(f"Mounting project '[cyan]{name}[/cyan]' to '[cyan]{directory}[/cyan]'...")
     if enc_manager.project_mount(name, password, directory):

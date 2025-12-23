@@ -142,7 +142,8 @@ def server_project_mount(ctx, project_name, password):
     success = handler.mount_project(project_name, password)
     
     if success:
-        res = {"status": "success", "mount_point": f"~/.enc/run/master/{project_name}"}
+        user = getpass.getuser()
+        res = {"status": "success", "mount_point": f"/home/{user}/.enc/run/master/{project_name}"}
         log_result(ctx, res)
         click.echo(json.dumps(res))
     else:
@@ -180,6 +181,19 @@ def server_project_unmount(ctx, project_name):
     handler = GocryptfsHandler()
     handler.unmount_project(project_name)
     res = {"status": "success"}
+    log_result(ctx, res)
+    click.echo(json.dumps(res))
+
+@cli.command("server-project-remove")
+@click.argument("project_name")
+@click.pass_context
+def server_project_remove(ctx, project_name):
+    """Internal: Permanently remove a project."""
+    check_server_permission(ctx)
+    
+    server = EncServer()
+    res = server.delete_project(project_name, ctx.obj.get("session_id"))
+    
     log_result(ctx, res)
     click.echo(json.dumps(res))
 

@@ -28,7 +28,9 @@ class Authentication:
         ]
     }
 
-    def __init__(self):
+    def __init__(self, policy_file=None):
+        if policy_file:
+            self.POLICY_FILE = policy_file
         self.policy = self._load_policy()
 
     def _load_policy(self):
@@ -112,7 +114,8 @@ class Authentication:
     def add_user_project(self, username, project_name, metadata=None):
         """Add a project (with optional metadata) to a user's list."""
         if username == "admin":
-            return # Admin doesn't need explicit projects
+             # Admin can technically have projects too now that we standardized
+             pass
             
         if "users" not in self.policy:
             self.policy["users"] = {}
@@ -120,24 +123,25 @@ class Authentication:
             self.policy["users"][username] = {"role": self.ROLE_DEV, "permissions": self.PERMISSIONS[self.ROLE_DEV], "projects": {}}
         
         user_record = self.policy["users"][username]
-        if isinstance(user_record, list): # Legacy conversion
+        
+        # Legacy conversion for user record itself
+        if isinstance(user_record, list): 
              self.policy["users"][username] = {"role": self.ROLE_DEV, "permissions": user_record, "projects": {}}
              user_record = self.policy["users"][username]
 
         if "projects" not in user_record:
             user_record["projects"] = {}
         
-        # Legacy list to dict conversion
-        if isinstance(user_record["projects"], list):
-            user_record["projects"] = {p: {"mount_path": None, "vault_path": None, "exec": None} for p in user_record["projects"]}
+        # Prepare default metadata
+        if metadata is None:
+             metadata = {"mount_path": None, "vault_path": None, "exec": None}
 
+        # Add or Update
         if project_name not in user_record["projects"]:
-            if metadata is None:
-                metadata = {"mount_path": None, "vault_path": None, "exec": None}
             user_record["projects"][project_name] = metadata
             self.save_policy()
-        elif metadata:
-            # Update metadata if provided
+        else:
+            # Update existing metadata
             user_record["projects"][project_name].update(metadata)
             self.save_policy()
 
@@ -145,8 +149,11 @@ class Authentication:
         """Remove a project from a user's list."""
         user_record = self.policy.get("users", {}).get(username)
         if isinstance(user_record, dict) and "projects" in user_record:
-            if project_name in user_record["projects"]:
-                user_record["projects"].remove(project_name)
+            projects = user_record["projects"]
+            
+            # Dict removal
+            if project_name in projects:
+                del projects[project_name]
                 self.save_policy()
 
     def has_project_access(self, username, project_name):

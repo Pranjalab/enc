@@ -155,6 +155,55 @@ class EncServer:
         self._update_policy(username, role)
         return True
 
+    def delete_project(self, project_name, session_id):
+        """Remove a project from the system (files and policy)."""
+        import shutil
+        
+        # 1. Identify User from Session
+        username = self.get_username_from_session(session_id)
+        if not username:
+             return {"status": "error", "message": "Invalid Session"}
+
+        # 2. Check Access/Ownership
+        # Explicit admin check OR ownership check.
+        # Currently policy stores projects under users.
+        # If user is admin, they can delete any project IF we passed target user.
+        # BUT for now, let's assume user deletes THEIR project.
+        # Admin deletion of other's projects requires different args (target_user).
+        
+        # For this iteration: User deletes their OWN project.
+        if not self.auth.has_project_access(username, project_name):
+             return {"status": "error", "message": "Access Denied"}
+
+        # 3. Unmount if mounted
+        try:
+             # Check if mounted by trying to unmount or check mount result
+             from enc_server.gocryptfs_handler import GocryptfsHandler
+             handler = GocryptfsHandler()
+             # We blindly attempt unmount; if not mounted it fails gracefully or we ignore
+             handler.unmount_project(project_name)
+        except Exception:
+             pass 
+
+        # 4. Remove Files
+        try:
+            vault_path = os.path.expanduser(f"~/.enc/vault/master/{project_name}")
+            run_path = os.path.expanduser(f"~/.enc/run/master/{project_name}")
+            
+            if os.path.exists(vault_path):
+                shutil.rmtree(vault_path)
+            
+            if os.path.exists(run_path):
+                shutil.rmtree(run_path)
+                
+        except Exception as e:
+            return {"status": "error", "message": f"File deletion failed: {e}"}
+
+        # 5. Update Policy
+        self.auth.remove_user_project(username, project_name)
+
+        return {"status": "success", "message": f"Project {project_name} deleted."}
+
     def delete_user(self, username):
         """Remove a system user and update policy."""
         import subprocess
