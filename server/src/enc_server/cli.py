@@ -24,13 +24,9 @@ def cli(ctx, session_id):
 
 def log_result(ctx, result_data):
     """Log the command result to the session file if session_id is provided."""
-    session_id = ctx.obj.get("session_id")
-    if session_id:
-        from enc_server.enc import EncServer
-        server = EncServer()
-        # Use full command path for clarity in logs
-        cmd_path = ctx.command_path
-        server.log_command(session_id, cmd_path, result_data)
+    from enc_server.session import Session
+    sess = Session()
+    sess.log_result(ctx, result_data)
 
 def check_server_permission(ctx):
     """Check permissions if running in Server Mode."""
@@ -50,7 +46,9 @@ def check_server_permission(ctx):
          ctx.exit(1)
 
     if not auth.is_allowed(user, cmd_path):
-        console.print(f"[bold red]Access Denied:[/bold red] User '{user}' is not allowed to run '{cmd_path}'.")
+        import json
+        error_res = {"status": "error", "message": f"Access Denied: User '{user}' is not allowed to run '{cmd_path}'."}
+        click.echo(json.dumps(error_res))
         ctx.exit(1)
 
 def ensure_admin(ctx):
@@ -102,28 +100,27 @@ def init(ctx):
 
 @cli.command("server-project-init")
 @click.argument("project_name")
-@click.option("--password", prompt=True, hide_input=True)
+@click.option("--password", default=None, help="Project encryption password (if not provided, will prompt)")
+@click.option("--project-dir", default=None, help="Local project directory on client (for tracking)")
 @click.pass_context
-def server_project_init(ctx, project_name, password):
+def server_project_init(ctx, project_name, password, project_dir):
     """Internal: Initialize encrypted project vault."""
     check_server_permission(ctx)
-    from enc_server.gocryptfs_handler import GocryptfsHandler
-    handler = GocryptfsHandler()
-    success = handler.init_project(project_name, password)
     
-    import json
+    # Handle password prompt if not provided
+    if not password:
+         password = click.prompt("Enter Project Password", hide_input=True)
+         
     import getpass
-    if success:
-        # Add project to user's list
-        user = getpass.getuser()
-        auth.add_user_project(user, project_name)
-        res = {"status": "success", "project": project_name}
-        log_result(ctx, res)
-        click.echo(json.dumps(res))
-    else:
-        res = {"status": "error", "message": "Failed to init project"}
-        log_result(ctx, res)
-        click.echo(json.dumps(res))
+    import json
+    user = getpass.getuser()
+    session_id = ctx.obj.get("session_id")
+    
+    server = EncServer()
+    success, res = server.project_init(project_name, password, session_id, project_dir)
+    
+    log_result(ctx, res)
+    click.echo(json.dumps(res))
 
 @cli.command("server-project-mount")
 @click.argument("project_name")
@@ -152,6 +149,18 @@ def server_project_mount(ctx, project_name, password):
         res = {"status": "error"}
         log_result(ctx, res)
         click.echo(json.dumps(res))
+
+@cli.command("server-project-list")
+@click.pass_context
+def server_project_list(ctx):
+    """Internal: List projects for the current user."""
+    check_server_permission(ctx)
+    
+    server = EncServer()
+    success, res = server.project_list(ctx.obj.get("session_id"))
+    
+    # log_result(ctx, res) # Optional, depends on if we want to log every list op
+    click.echo(json.dumps(res))
 
 @cli.command("server-project-unmount")
 @click.argument("project_name")

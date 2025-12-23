@@ -37,15 +37,18 @@ class GocryptfsHandler:
             cmd = ["gocryptfs", "-init", "-q", str(cipher_dir)]
             console.print(f"Initializing vault at {cipher_dir}...")
             
-            # Pass password via stdin
+            # gocryptfs -init prompts for password twice (init and confirm)
+            # We must pass the same password twice followed by newlines.
             proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            stdout, stderr = proc.communicate(input=f"{password}\n")
+            stdout, stderr = proc.communicate(input=f"{password}\n{password}\n")
             
             if proc.returncode != 0:
                 raise Exception(f"Gocryptfs init failed: {stderr}")
 
             console.print(f"[green]Vault initialized for {project_name}[/green]")
-            return True
+
+            # Auto-mount after initialization
+            return self.mount_project(project_name, password)
             
         except Exception as e:
             console.print(f"[red]Error:[/red] {e}")

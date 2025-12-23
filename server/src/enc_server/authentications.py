@@ -17,14 +17,14 @@ class Authentication:
         ROLE_ADMIN: [
             "status", "server-login", "server-logout", 
             "user add", "user list", "user remove", 
-            "init", "server-project-init", "server-project-mount", "server-project-unmount", "project_sync", "project_run",
+            "init", "server-project-init", "server-project-mount", "server-project-unmount", "server-project-sync", "server-project-run",
             "show users", "server-user-create", "server-user-delete", "server-user-list",
-            "project list"
+            "server-project-list", "project list"
         ],
         ROLE_DEV: [
             "status", "server-login", "server-logout",
-            "init", "server-project-init", "server-project-mount", "server-project-unmount", "project_sync", "project_run",
-            "project list"
+            "init", "server-project-init", "server-project-mount", "server-project-unmount", "server-project-sync", "server-project-run",
+            "server-project-list", "project list"
         ]
     }
 
@@ -72,11 +72,25 @@ class Authentication:
         return None
 
     def get_user_projects(self, username):
-        """Get the list of projects for a user."""
+        """Get the list of project names for a user."""
         user_record = self.policy.get("users", {}).get(username)
         if isinstance(user_record, dict):
-            return user_record.get("projects", [])
+            projs = user_record.get("projects", [])
+            if isinstance(projs, dict):
+                return list(projs.keys())
+            return projs
         return []
+
+    def get_user_project_metadata(self, username):
+        """Get the detailed project dictionary for a user."""
+        user_record = self.policy.get("users", {}).get(username)
+        if isinstance(user_record, dict):
+            projs = user_record.get("projects", {})
+            if isinstance(projs, list):
+                # Convert legacy list to dict if needed for viewing
+                return {p: {"mount_path": None, "vault_path": None, "exec": None} for p in projs}
+            return projs
+        return {}
 
     def get_user_permissions(self, username):
         """Get all permissions (commands) for a user."""
@@ -95,26 +109,36 @@ class Authentication:
             
         return sorted(list(perms))
 
-    def add_user_project(self, username, project_name):
-        """Add a project to a user's list."""
+    def add_user_project(self, username, project_name, metadata=None):
+        """Add a project (with optional metadata) to a user's list."""
         if username == "admin":
             return # Admin doesn't need explicit projects
             
         if "users" not in self.policy:
             self.policy["users"] = {}
         if username not in self.policy["users"]:
-            self.policy["users"][username] = {"role": self.ROLE_DEV, "permissions": self.PERMISSIONS[self.ROLE_DEV], "projects": []}
+            self.policy["users"][username] = {"role": self.ROLE_DEV, "permissions": self.PERMISSIONS[self.ROLE_DEV], "projects": {}}
         
         user_record = self.policy["users"][username]
         if isinstance(user_record, list): # Legacy conversion
-             self.policy["users"][username] = {"role": self.ROLE_DEV, "permissions": user_record, "projects": []}
+             self.policy["users"][username] = {"role": self.ROLE_DEV, "permissions": user_record, "projects": {}}
              user_record = self.policy["users"][username]
 
         if "projects" not in user_record:
-            user_record["projects"] = []
+            user_record["projects"] = {}
         
+        # Legacy list to dict conversion
+        if isinstance(user_record["projects"], list):
+            user_record["projects"] = {p: {"mount_path": None, "vault_path": None, "exec": None} for p in user_record["projects"]}
+
         if project_name not in user_record["projects"]:
-            user_record["projects"].append(project_name)
+            if metadata is None:
+                metadata = {"mount_path": None, "vault_path": None, "exec": None}
+            user_record["projects"][project_name] = metadata
+            self.save_policy()
+        elif metadata:
+            # Update metadata if provided
+            user_record["projects"][project_name].update(metadata)
             self.save_policy()
 
     def remove_user_project(self, username, project_name):

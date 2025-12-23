@@ -19,6 +19,34 @@ if [ -L "$SYMLINK_PATH" ] || [ -f "$SYMLINK_PATH" ]; then
     rm -f "$SYMLINK_PATH"
 fi
 
+# Cleanup dependencies
+echo "Cleaning up dependencies..."
+OS="$(uname)"
+if command -v sshfs &> /dev/null; then
+    echo "Found sshfs. Do you want to uninstall it? (May affect other applications) [y/N]"
+    read -r response
+    if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+        if [ "$OS" = "Darwin" ]; then
+            if command -v brew &> /dev/null; then
+                echo "Uninstalling sshfs..."
+                brew uninstall gromgit/homebrew-fuse/sshfs || brew uninstall sshfs || true
+                echo "Uninstalling macFUSE..."
+                brew uninstall --cask macfuse || true
+            fi
+        elif [ "$OS" = "Linux" ]; then
+            if command -v apt-get &> /dev/null; then
+                sudo apt-get remove -y sshfs
+            elif command -v dnf &> /dev/null; then
+                sudo dnf remove -y sshfs
+            elif command -v yum &> /dev/null; then
+                sudo yum remove -y sshfs
+            elif command -v pacman &> /dev/null; then
+                sudo pacman -Rs --noconfirm sshfs
+            fi
+        fi
+    fi
+fi
+
 # Remove configuration state
 ENC_DATA="$HOME/.enc"
 if [ -d "$ENC_DATA" ]; then

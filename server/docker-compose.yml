@@ -9,7 +9,7 @@ services:
     security_opt:
       - apparmor:unconfined
     devices:
-      - /dev/fuse:/dev/fuserver/Dockerfile
+      - /dev/fuse:/dev/fuse
     container_name: enc_ssh_server
     ports:
       - "2222:22"
@@ -18,3 +18,9 @@ services:
     volumes:
       - ./ssh/authorized_keys:/home/admin/.ssh/authorized_keys
       - ./ssh/host_keys:/etc/ssh/ssh_host_keys
+#       - enc_data:/home
+#       # - enc_config:/etc/enc
+
+# volumes:
+  # enc_data:
+  # enc_config:

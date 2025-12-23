@@ -16,6 +16,39 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
+# Ensure sshfs
+if ! command -v sshfs &> /dev/null; then
+    echo "sshfs not found. Attempting to install..."
+    OS="$(uname)"
+    if [ "$OS" = "Darwin" ]; then
+        if command -v brew &> /dev/null; then
+            echo "Installing macFUSE and sshfs via Homebrew..."
+            brew install --cask macfuse || true
+            brew install gromgit/homebrew-fuse/sshfs || brew install sshfs || echo "Warning: Could not install sshfs automatically. Please install it manually."
+        else
+            echo "Homebrew not found. Please install macFUSE and sshfs manually from https://osxfuse.github.io/"
+        fi
+    elif [ "$OS" = "Linux" ]; then
+        if command -v apt-get &> /dev/null; then
+            echo "Installing sshfs via apt..."
+            sudo apt-get update && sudo apt-get install -y sshfs
+        elif command -v dnf &> /dev/null; then
+            echo "Installing sshfs via dnf..."
+            sudo dnf install -y sshfs
+        elif command -v yum &> /dev/null; then
+            echo "Installing sshfs via yum..."
+            sudo yum install -y sshfs
+        elif command -v pacman &> /dev/null; then
+            echo "Installing sshfs via pacman..."
+            sudo pacman -S --noconfirm sshfs
+        else
+            echo "Warning: Could not detect package manager. Please install sshfs manually."
+        fi
+    else
+        echo "Warning: Unsupported OS for auto-installation. Please install sshfs manually."
+    fi
+fi
+
 # Clean previous install
 if [ -d "$INSTALL_DIR" ]; then
     echo "Removing existing installation at $INSTALL_DIR..."

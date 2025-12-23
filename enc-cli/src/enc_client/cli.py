@@ -13,6 +13,72 @@ console = Console()
 # Initialize logic class
 enc_manager = Enc()
 
+def is_strong_password(p):
+    """Check if a password meets the strength requirements."""
+    if len(p) < 8: return False, "Password must be at least 8 characters long."
+    if not any(c.isupper() for c in p): return False, "Password must contain at least one uppercase letter."
+    if not any(c.islower() for c in p): return False, "Password must contain at least one lowercase letter."
+    if not any(c.isdigit() or not c.isalnum() for c in p): return False, "Password must contain at least one number or special character."
+    return True, ""
+
+def interactive_unmount_timer(enc_manager, name, project_dir, timeout=5):
+    """Wait for user input to stay mounted, otherwise auto-unmount."""
+    import sys
+    import select
+    import time
+    
+    # Try to use raw mode for single-key 'y' response
+    try:
+        import termios
+        import tty
+        use_raw = True
+    except ImportError:
+        use_raw = False
+
+    console.print(f"\n[bold yellow]Auto-Unmount Notice:[/bold yellow]")
+    console.print(f"Project '[cyan]{name}[/cyan]' is securely mounted.")
+    console.print(f"It will automatically unmount in [bold]{timeout}[/bold] seconds.")
+    if use_raw:
+        console.print(f"Press [bold cyan]'y'[/bold cyan] to stay mounted, or any other key to unmount now.")
+    else:
+        console.print(f"Type [bold cyan]'y'[/bold cyan] and press [bold cyan]ENTER[/bold cyan] to stay mounted.")
+
+    if use_raw:
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            start_time = time.time()
+            while time.time() - start_time < timeout:
+                remaining = int(timeout - (time.time() - start_time))
+                # Write to stdout directly since console.print might add newlines
+                sys.stdout.write(f"\r[Time Remaining: {remaining}s] Press 'y' to stay... ")
+                sys.stdout.flush()
+                
+                rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
+                if rlist:
+                    char = sys.stdin.read(1).lower()
+                    if char == 'y':
+                        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                        console.print("\n\n[bold green]Confirmed![/bold green] Staying mounted. Enjoy your secure workspace!")
+                        return True
+                    else:
+                        break # User pressed something else
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    else:
+        # Fallback for systems without termios/tty
+        rlist, _, _ = select.select([sys.stdin], [], [], timeout)
+        if rlist:
+            line = sys.stdin.readline().strip().lower()
+            if line == 'y':
+                console.print("[bold green]Staying mounted.[/bold green]")
+                return True
+
+    console.print("\n\n[bold yellow]Unmounting...[/bold yellow] Closing secure bridge.")
+    enc_manager.project_unmount(name, project_dir)
+    return False
+
 @click.group(invoke_without_command=True)
 @click.pass_context
 @click.option('--version', is_flag=True, help="Show version.")
@@ -123,33 +189,130 @@ def project_group():
     pass
 
 @project_group.command("init")
-@click.argument("name")
-@click.password_option()
-def project_init(name, password):
+@click.argument("name", required=False)
+def project_init(name):
     """Initialize a new encrypted project on server."""
     # Check login first
     if not enc_manager.config.get("session_id"):
         console.print("[yellow]Please login first.[/yellow]")
         return
-        
-    console.print(f"Initializing project '[cyan]{name}[/cyan]'...")
-    if enc_manager.project_init(name, password):
-        console.print(f"[bold green]Project '{name}' initialized successfully.[/bold green]")
 
-@project_group.command("dev")
-@click.argument("name")
-@click.password_option()
-def project_dev(name, password):
-    """Mount project for development."""
+    if not name:
+        name = click.prompt("Enter Project Name", type=str)
+
+    # Check in session file if the project_name already exist or not
+    session_data = enc_manager.get_session_data()
+    if session_data and name in session_data.get("projects", []):
+        console.print(f"[yellow]Project '{name}' already exists in your account.[/yellow]")
+        if not click.confirm("Do you want to re-initialize it?"):
+            return
+
+    # Check permissions from session
+    if not enc_manager.check_permission("server-project-init"):
+        console.print("[red]Permission Denied: You are not allowed to initialize projects.[/red]")
+        return
+        
+    # Ask for project directory
+    project_dir = click.prompt("Enter Project Directory", default=".", type=click.Path(file_okay=False))
+    
+    project_dir = os.path.abspath(project_dir)
+
+    # Check for .enc directory within the project directory to avoid configuration conflicts
+    local_enc_path = os.path.join(project_dir, ".enc")
+    if os.path.exists(local_enc_path):
+        console.print(Panel(
+            f"[bold red]Configuration Conflict Error[/bold red]\n\n"
+            f"A [cyan].enc[/cyan] folder already exists within the directory: [yellow]{project_dir}[/yellow]\n\n"
+            "Initializing a new project here might overwrite or conflict with your existing ENC environment "
+            "configurations, leading to unexpected behavior.\n\n"
+            "[bold white]Please move the existing .enc folder or provide a different project directory.[/bold white]",
+            border_style="red"
+        ))
+        return
+    # Ask for password with confirmation and validation
+    while True:
+        password = click.prompt("Enter Project Password", hide_input=True, confirmation_prompt=True)
+        is_strong, msg = is_strong_password(password)
+        if is_strong:
+            break
+        console.print(f"[red]{msg}[/red]")
+
+    console.print(f"Initializing project '[cyan]{name}[/cyan]' in '[cyan]{project_dir}[/cyan]'...")
+    # Note: Currently server logic might not use project_dir for vault creation, 
+    # but we can pass it if we want to initialize local context there.
+    # For now, we call the manager.
+    if enc_manager.project_init(name, password, project_dir):
+        console.print(f"[bold green]Project '{name}' initialized successfully at '[cyan]{project_dir}[/cyan]'.[/bold green]")
+        
+        # Interactive unmount timer
+        interactive_unmount_timer(enc_manager, name, project_dir)
+
+@project_group.command("list")
+def project_list():
+    """List all projects you have access to."""
     if not enc_manager.config.get("session_id"):
         console.print("[yellow]Please login first.[/yellow]")
         return
         
-    console.print(f"Mounting project '[cyan]{name}[/cyan]'...")
-    if enc_manager.project_mount(name, password):
-        console.print(f"[bold green]Project mounted.[/bold green]")
-        # TODO: Start Sync Logic here
-        console.print("[dim]Sync capability to be implemented via rsync/sshfs...[/dim]")
+    projects = enc_manager.project_list()
+    if projects is None:
+        console.print("[red]Failed to retrieve project list.[/red]")
+        return
+        
+    if not projects:
+        console.print("[yellow]You don't have access to any projects yet.[/yellow]")
+        return
+        
+    table = Table(title="Your Projects")
+    table.add_column("Project Name", style="cyan")
+    table.add_column("Mount Path", style="green")
+    table.add_column("Exec", style="magenta")
+    
+    for name, meta in projects.items():
+        table.add_row(
+            name,
+            str(meta.get("mount_path", "N/A")),
+            str(meta.get("exec", "None"))
+        )
+        
+    console.print(table)
+
+@project_group.command("dev")
+@click.argument("name")
+@click.argument("directory", default=".", type=click.Path(file_okay=False))
+@click.password_option()
+def project_dev(name, directory, password):
+    """Mount project for development in a specific directory."""
+    if not enc_manager.config.get("session_id"):
+        console.print("[yellow]Please login first.[/yellow]")
+        return
+        
+    if not enc_manager.check_permission("server-project-mount"):
+        console.print("[red]Permission Denied: You are not allowed to mount projects.[/red]")
+        return
+        
+    console.print(f"Mounting project '[cyan]{name}[/cyan]' to '[cyan]{directory}[/cyan]'...")
+    if enc_manager.project_mount(name, password, directory):
+        console.print(f"[bold green]Project mounted and bridged.[/bold green]")
+    else:
+        console.print(f"[bold red]Mount failed.[/bold red]")
+
+@project_group.command("unmount")
+@click.argument("name")
+@click.argument("directory", default=".", type=click.Path(file_okay=False))
+def project_unmount(name, directory):
+    """Unmount and close bridge for a project."""
+    if not enc_manager.config.get("session_id"):
+        console.print("[yellow]Please login first.[/yellow]")
+        return
+        
+    if not enc_manager.check_permission("server-project-unmount"):
+        console.print("[red]Permission Denied: You are not allowed to unmount projects.[/red]")
+        return
+        
+    console.print(f"Unmounting project '[cyan]{name}[/cyan]'...")
+    if enc_manager.project_unmount(name, directory):
+        console.print(f"[bold green]Project unmounted and bridge closed.[/bold green]")
 
 @project_group.command("sync")
 @click.argument("name")
@@ -158,6 +321,10 @@ def project_sync(name, local_path):
     """Sync local files to the remote project."""
     if not enc_manager.config.get("session_id"):
         console.print("[yellow]Please login first.[/yellow]")
+        return
+        
+    if not enc_manager.check_permission("server-project-sync"):
+        console.print("[red]Permission Denied: You are not allowed to sync projects.[/red]")
         return
         
     console.print(f"Syncing '[cyan]{local_path}[/cyan]' -> '[cyan]{name}[/cyan]'...")
@@ -171,6 +338,9 @@ def project_sync(name, local_path):
 @click.argument("command", nargs=-1)
 def project_run(name, command):
     """Run a command on the remote project."""
+    if not enc_manager.check_permission("server-project-run"):
+        console.print("[red]Permission Denied: You are not allowed to run commands in projects.[/red]")
+        return
     if not command:
         console.print("[yellow]No command provided. Starting interactive shell...[/yellow]")
         # TODO: Interactive shell support
@@ -205,6 +375,9 @@ def user():
 @click.option("--json", "json_output", is_flag=True, help="Output in JSON format")
 def user_list(json_output):
     """List users (cached in session)."""
+    if not enc_manager.check_permission("user list"):
+        console.print("[red]Permission Denied: You are not allowed to list users.[/red]")
+        return
     users = enc_manager.user_list()
     if users:
         table = Table(title="ENC Users")
@@ -242,6 +415,9 @@ def user_list(json_output):
 @click.option("--json", "json_output", is_flag=True, help="Output in JSON format")
 def user_create(username, password, role, ssh_key, json_output):
     """Create a new user on the server."""
+    if not enc_manager.check_permission("user create"):
+        console.print("[red]Permission Denied: You are not allowed to create users.[/red]")
+        return
     
     # 1. Prompt for Role if missing
     if not role:
@@ -249,7 +425,12 @@ def user_create(username, password, role, ssh_key, json_output):
     
     # 2. Prompt for Password if missing
     if not password:
-        password = click.prompt("Enter Password", hide_input=True)
+        while True:
+            password = click.prompt("Enter Password", hide_input=True, confirmation_prompt=True)
+            is_strong, msg = is_strong_password(password)
+            if is_strong:
+                break
+            console.print(f"[red]{msg}[/red]")
     
     # 3. Handle SSH Key
     ssh_key_content = None
@@ -299,6 +480,9 @@ def user_create(username, password, role, ssh_key, json_output):
 @click.option("--json", "json_output", is_flag=True, help="Output in JSON format")
 def user_delete(username, json_output):
     """Delete a user from the server."""
+    if not enc_manager.check_permission("user remove"):
+        console.print("[red]Permission Denied: You are not allowed to remove users.[/red]")
+        return
     if not json_output:
         if not click.confirm(f"Are you sure you want to delete user '{username}'?"):
             return

@@ -6,6 +6,7 @@ import subprocess
 from pathlib import Path
 from rich.console import Console
 from enc_server.authentications import Authentication
+from enc_server.session import Session
 
 console = Console()
 
@@ -22,6 +23,7 @@ class EncServer:
             d.mkdir(parents=True, exist_ok=True)
             
         self.auth = Authentication()
+        self.session = Session()
             
     def load_config(self):
         # Placeholder for Global Server Config (if distinct from policy.json)
@@ -30,73 +32,75 @@ class EncServer:
 
     def create_session(self, username):
         """Create a new session ID and file for the user."""
-        session_id = str(uuid.uuid4())
-        timestamp = datetime.datetime.now().isoformat()
-        
-        session_data = {
-            "session_id": session_id,
-            "username": username,
-            "created_at": timestamp,
-            "context": "enc",
-            "active_project": None,
-            "allowed_commands": self.auth.get_user_permissions(username),
-            "projects": self.auth.get_user_projects(username),
-            "logs": {
-            }
-        }
-
-        # adding started session log
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log_key = f"[{timestamp}] {"login"}"
-        session_data["logs"][log_key] = "Session started"
-        
-        session_file = self.session_dir / f"{session_id}.json"
-        with open(session_file, 'w') as f:
-            json.dump(session_data, f, indent=4)
-            
-        console.print(f"[green]Session created: {session_id}[/green]")
-        return session_data
-
+        return self.session.create_session(username, self.auth)
 
     def get_session(self, session_id):
         """Retrieve session data."""
-        session_file = self.session_dir / f"{session_id}.json"
-        if not session_file.exists():
-            return None
-        
-        with open(session_file, 'r') as f:
-            return json.load(f)
+        return self.session.get_session(session_id)
 
     def log_command(self, session_id, command, output):
         """Log a command and its output to the session file."""
-        session_data = self.get_session(session_id)
-        if not session_data:
-            return False
-            
-        if "logs" not in session_data:
-            session_data["logs"] = {}
-            
-        # If the exact command exists, we might want to preserve history or just overwrite
-        # To avoid giant keys if someone runs it 100 times, maybe add a timestamp to key or just overwrite.
-        # User asked for "key value dict of command and return results".
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log_key = f"[{timestamp}] {command}"
-        session_data["logs"][log_key] = output
-        
-        session_file = self.session_dir / f"{session_id}.json"
-        with open(session_file, 'w') as f:
-            json.dump(session_data, f, indent=4)
-        return True
+        return self.session.log_command(session_id, command, output)
 
     def logout_session(self, session_id):
         """Destroy a session."""
-        session_file = self.session_dir / f"{session_id}.json"
-        if session_file.exists():
-            # In future: trigger unmount/cleanup here
-            os.remove(session_file)
-            console.print(f"[yellow]Session {session_id} destroyed.[/yellow]")
-            return True
-        return False
+        return self.session.logout_session(session_id)
+
+    def project_init(self, project_name, password, session_id, project_dir):
+        """Initialize encrypted project vault and manage session/access."""
+        session_data = self.session.get_session(session_id)
+        if not session_id or not session_data or not self.session.check_session_id(session_id):
+            console.print("[bold red]Session Error:[/bold red] Invalid or expired session.")
+            return False, {"status": "error", "message": "Invalid or expired session"}
+            
+        username = session_data.get("username")
+
+        from enc_server.gocryptfs_handler import GocryptfsHandler
+        handler = GocryptfsHandler()
+        
+        # Check if project exists first
+        if (handler.vault_root / project_name).exists():
+             return False, {"status": "error", "message": f"Project '{project_name}' already exists on the server."}
+
+        success = handler.init_project(project_name, password)
+
+        if success:
+            self.session.start_session_monitoring()
+
+            # Construct paths (matching GocryptfsHandler defaults)
+            vault_path = f"/home/{username}/.enc/vault/master/{project_name}"
+            mount_point = f"/home/{username}/.enc/run/master/{project_name}"
+            
+            metadata = {
+                "mount_path": mount_point,
+                "vault_path": vault_path,
+                "exec": None
+            }
+
+            # Add project to user's list with metadata
+            self.auth.add_user_project(username, project_name, metadata=metadata)
+            return True, {"status": "success", "project": project_name, "mount_point": mount_point}
+        else:
+            return False, {"status": "error", "message": "Failed to init project"}
+
+    def project_list(self, session_id):
+        """Get the list of projects and their metadata for the current user."""
+        session_data = self.session.get_session(session_id)
+        if not session_id or not session_data or not self.session.check_session_id(session_id):
+            return False, {"status": "error", "message": "Invalid or expired session"}
+            
+        username = session_data.get("username")
+        raw_projects = self.auth.get_user_project_metadata(username)
+        
+        # Filter out sensitive vault_path from the response
+        filtered_projects = {}
+        for name, meta in raw_projects.items():
+            filtered_projects[name] = {
+                "mount_path": meta.get("mount_path"),
+                "exec": meta.get("exec")
+            }
+        
+        return True, {"status": "success", "projects": filtered_projects}
 
     def create_user(self, username, password, role="user", ssh_key=None):
         """Create a system user and update policy."""
@@ -142,6 +146,7 @@ class EncServer:
                     except Exception as e:
                         console.print(f"[red]Failed to configure SSH key: {e}[/red]")
 
+                
         except Exception as e:
             console.print(f"[red]Failed to create system user: {e}[/red]")
             return False

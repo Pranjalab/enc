@@ -7,7 +7,8 @@ import subprocess
 import shlex
 
 class EncRestrictedShell(cmd.Cmd):
-    intro = """
+    intro = ""
+    welcome_msg = """
     Welcome to the ENC Secure Environment.
     Type 'help' or '?' to list allowed commands.
     Type 'exit' to disconnect.
@@ -52,7 +53,10 @@ class EncRestrictedShell(cmd.Cmd):
 
     def run(self):
         try:
-            self.cmdloop()
+            # Only print welcome if we are on a TTY
+            if sys.stdin.isatty():
+                print(self.welcome_msg)
+            self.cmdloop(intro="")
         except KeyboardInterrupt:
             print("\nUse 'exit' to quit.")
             self.run()
@@ -62,22 +66,50 @@ if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == '-c':
         if len(sys.argv) > 2:
             cmd_line = sys.argv[2]
-            # Restrict to 'enc ' commands only
+            
+            # Debug logging to identify what sshfs/sftp is sending
+            try:
+                with open("/tmp/ssh_shell.log", "a") as f:
+                    import datetime
+                    timestamp = datetime.datetime.now().isoformat()
+                    f.write(f"[{timestamp}] USER: {getpass.getuser()} | CMD: {cmd_line}\n")
+            except:
+                pass
+
+            # Restrict to 'enc ' commands or 'sftp-server'
             if cmd_line.startswith("enc ") or cmd_line == "enc":
                 shell = EncRestrictedShell()
-                # Run the specific command
-                # We strip 'enc ' prefix because do_enc expects the arg
                 arg = cmd_line[4:].strip()
                 if arg:
                     shell.do_enc(arg)
-                else:
-                    # Just 'enc' -> run nothing or help?
-                    # interactive mode doesn't make sense here.
-                    pass
+            elif "sftp-server" in cmd_line:
+                # Use os.execv to REPLACE the current shell process with sftp-server.
+                # This ensures sftp-server has direct control of stdin/stdout/pipes.
+                args = shlex.split(cmd_line)
+                sftp_bin = args[0]
+                try:
+                   os.execv(sftp_bin, args)
+                except Exception as e:
+                   with open("/tmp/ssh_shell.log", "a") as f:
+                       f.write(f"SFTP EXEC ERROR: {e}\n")
+                   sys.exit(1)
             else:
-                 print(f"Restricted shell: Command not allowed: {cmd_line}")
-                 sys.exit(1)
+                try:
+                    with open("/tmp/ssh_shell.log", "a") as f:
+                        f.write(f"*** FORBIDDEN: {cmd_line}\n")
+                except:
+                    pass
+                print(f"Restricted shell: Command not allowed: {cmd_line}")
+                sys.exit(1)
         else:
             sys.exit(1)
     else:
+        # Debug logging for interactive/non-c calls
+        try:
+            with open("/tmp/ssh_shell.log", "a") as f:
+                import datetime
+                timestamp = datetime.datetime.now().isoformat()
+                f.write(f"[{timestamp}] USER: {getpass.getuser()} | INTERACTIVE/OTHER\n")
+        except:
+            pass
         EncRestrictedShell().run()

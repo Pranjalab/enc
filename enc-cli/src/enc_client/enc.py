@@ -4,6 +4,8 @@ import subprocess
 import sys
 import shlex
 import socket
+import shutil
+import re
 import click
 import pexpect
 from urllib.parse import urlparse
@@ -104,6 +106,34 @@ class Enc:
 
     def get_config_value(self, key):
         return self.config.get(key)
+        
+    def get_session_data(self):
+        """Load session data from the session file."""
+        session_id = self.config.get("session_id")
+        if not session_id:
+            return None
+            
+        session_file = os.path.join(self.config_dir, "sessions", f"{session_id}.json")
+        if not os.path.exists(session_file):
+            return None
+            
+        try:
+            with open(session_file, 'r') as f:
+                return json.load(f)
+        except Exception:
+            return None
+
+    def check_permission(self, command):
+        """Check if the current user has permission to run the command."""
+        data = self.get_session_data()
+        if not data:
+            return False
+            
+        allowed = data.get("allowed_commands", [])
+        if "*" in allowed:
+            return True
+            
+        return command in allowed
         
     def _parse_url(self):
         """Helper to parse the configured URL."""
@@ -395,37 +425,72 @@ class Enc:
              
         return None
 
-    def project_init(self, name, password):
+    def project_init(self, name, password, project_dir):
         """Call server to init project vault."""
+
+        # check if project_dir has any files or folders
+        backup_dir = None
+        if os.path.exists(project_dir) and os.listdir(project_dir):
+            # create a backup of project_dir contents
+            # We move the entire folder to backup_path to be safe/atomic
+            backup_dir = os.path.join(self.config_dir, "backups", f"{name}_temp")
+            
+            # Clean up previous stuck backup if exists
+            if os.path.exists(backup_dir):
+                shutil.rmtree(backup_dir)
+                
+            console.print(f"[yellow]Backing up existing files to {backup_dir}...[/yellow]")
+            # Move project_dir (source) to backup_dir (dest)
+            # Since we removed backup_dir, this acts as a rename/move of the folder
+            shutil.move(project_dir, backup_dir)
+            
+            # Recreate empty project_dir for mounting
+            os.makedirs(project_dir)
+            
         base, target = self.get_ssh_base_cmd()
-        # To avoid showing password in process list, we must pipe it.
-        # ssh user@host "enc server-project-init name --password password"
-        # Since I used 'prompt=True' on server, I must pipe input.
         
         cmd = list(base)
-        # Construct command
-        remote_cmd = self.get_remote_cmd(f"server-project-init {name}")
+        # Construct command with password and project_dir as flags
+        remote_cmd = self.get_remote_cmd(f"server-project-init {shlex.quote(name)} --password {shlex.quote(password)} --project-dir {shlex.quote(project_dir)}")
         full_ssh = cmd + [target, remote_cmd]
         
         try:
-            # Popen to write to stdin
-            proc = subprocess.Popen(full_ssh, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            stdout, stderr = proc.communicate(input=f"{password}\n")
-            
-            if proc.returncode != 0:
-                console.print(f"[red]Init Failed:[/red] {stderr}")
+            # We can now use run/capture_output since password is a flag
+            res = subprocess.run(full_ssh, capture_output=True, text=True)
+            stdout = res.stdout
+            if res.returncode != 0:
+                console.print(f"[red]Init Failed:[/red] {res.stderr}")
                 return False
-                
-            # Parse JSON from stdout
+
             try:
-                import json
-                # Grep for JSON block if noise exists
-                import re
+                 # Parse JSON output from server
                 match = re.search(r'\{.*\}', stdout, re.DOTALL)
                 if match:
                     data = json.loads(match.group(0))
                     if data.get("status") == "success":
-                         return True
+                         server_mount_point = data.get("mount_point")
+                         if server_mount_point:
+                             from enc_client.sshfs_handler import SshfsHandler
+                             ssh_bridge = SshfsHandler(self.config)
+                             success = ssh_bridge.mount_project(name, project_dir, server_mount_point)
+                             if success:
+                                # Restore backup contents to the new mount
+                                if backup_dir and os.path.exists(backup_dir):
+                                    console.print("[yellow]Restoring files to encrypted vault...[/yellow]")
+                                    for item in os.listdir(backup_dir):
+                                        s = os.path.join(backup_dir, item)
+                                        d = os.path.join(project_dir, item)
+                                        if os.path.isdir(s):
+                                            shutil.copytree(s, d, dirs_exist_ok=True)
+                                            shutil.rmtree(s)
+                                        else:
+                                            shutil.copy2(s, d)
+                                            os.remove(s)
+                                    os.rmdir(backup_dir)
+                                    
+                                console.print(f"[green]Project {name} initialized successfully.[/green]")
+                            
+                                return True
                     else:
                          console.print(f"[red]Server Error:[/red] {data.get('message')}")
                 else:
@@ -439,8 +504,8 @@ class Enc:
             console.print(f"[red]Error:[/red] {e}")
             return False
 
-    def project_mount(self, name, password):
-        """Call server to mount project."""
+    def project_mount(self, name, password, local_dir="."):
+        """Call server to mount project and establish local SSHFS bridge."""
         base, target = self.get_ssh_base_cmd()
         
         cmd = list(base)
@@ -462,7 +527,12 @@ class Enc:
                 if match:
                     data = json.loads(match.group(0))
                     if data.get("status") == "success":
-                         return True
+                        server_mount_point = data.get("mount_point")
+                        if server_mount_point:
+                            from enc_client.sshfs_handler import SshfsHandler
+                            ssh_bridge = SshfsHandler(self.config)
+                            return ssh_bridge.mount_project(name, local_dir, server_mount_point)
+                        return True
             except:
                 pass
             return False
@@ -470,8 +540,14 @@ class Enc:
             console.print(f"[red]Error:[/red] {e}")
             return False
 
-    def project_unmount(self, name):
-        """Call server to unmount project."""
+    def project_unmount(self, name, local_dir="."):
+        """Call server to unmount project and close local SSHFS bridge."""
+        # 1. Close local bridge first
+        from enc_client.sshfs_handler import SshfsHandler
+        ssh_bridge = SshfsHandler(self.config)
+        ssh_bridge.unmount_project(local_dir)
+
+        # 2. Call server to unmount vault
         base, target = self.get_ssh_base_cmd()
         remote_cmd = self.get_remote_cmd(f"server-project-unmount {name}")
         cmd = list(base) + [target, remote_cmd]
@@ -479,10 +555,37 @@ class Enc:
         try:
             res = subprocess.run(cmd, capture_output=True, text=True)
             if res.returncode == 0:
+                console.print(f"[green]Remote project '{name}' unmounted.[/green]")
                 return True
-            return False
+            else:
+                console.print(f"[red]Remote unmount failed:[/red] {res.stderr}")
+                return False
         except Exception:
             return False
+
+    def project_list(self):
+        """Get the list of projects from the server."""
+        base, target = self.get_ssh_base_cmd()
+        remote_cmd = self.get_remote_cmd("server-project-list")
+        cmd = list(base) + [target, remote_cmd]
+        
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0:
+                match = re.search(r'\{.*\}', res.stdout, re.DOTALL)
+                if match:
+                    data = json.loads(match.group(0))
+                    if data.get("status") == "success":
+                        return data.get("projects", {})
+                    else:
+                        console.print(f"[red]Server Error:[/red] {data.get('message', 'Unknown Error')}")
+                else:
+                    console.print(f"[red]Invalid Response:[/red] {res.stdout}")
+            else:
+                console.print(f"[red]Remote Error (Code {res.returncode}):[/red] {res.stderr}")
+            return None
+        except Exception:
+            return None
 
     def project_sync(self, name, local_path):
         """Sync files using rsync over SSH."""
