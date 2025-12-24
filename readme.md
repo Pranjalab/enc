@@ -7,7 +7,7 @@
 
 ![ENC Poster](docs/_static/enc_poster.png)
 
-> **Ever wondered how secure your scripts and algorithms really are once they’re deployed on a server?**
+> **Ever wondered how secure your projects and algorithms really are while development and deployment on a server?**
 
 When you deploy code to a standard server, it sits there in plaintext—accessible to anyone with root access, physical access to the disk, or a lucky exploit. 
 
