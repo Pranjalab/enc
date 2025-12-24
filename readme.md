@@ -1,6 +1,8 @@
 <div align="center">
   <img src="docs/_static/enc_icon.png" alt="ENC Logo" width="100"/>
   <h1>ENC: The Encrypted Coding Environment</h1>
+  
+  [![Documentation Status](https://img.shields.io/badge/docs-live-brightgreen)](https://pranjalab.github.io/enc/)
 </div>
 
 ![ENC Poster](docs/_static/enc_poster.png)
