@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="enc-server",
-    version="0.2.0",
+    version="0.1.3",
     # We are in server/, so we look for packages under src/
     package_dir={"": "src"},
     packages=find_packages(where="src"),

@@ -35,7 +35,7 @@ The system consists of two main components:
 - **🔒 Project-Level Encryption**: Each project is an independent encrypted vault (using `gocryptfs`). Keys are never stored on the server's disk.
 - **👁️ Session Monitoring**: Active sessions are monitored. Closing your terminal locks the session instantly.
 - **🚀 Runtime Encryption**: Code is decrypted on-the-fly into a secure RAM buffer for execution and wiped immediately after.
-- **⚡ SSHFS Integration**: Mount your remote encrypted projects locally to editing them with your favorite IDE (VS Code, Vim, etc.) as if they were on your machine.
+- **⚡ SSHFS Integration**: Mount your remote encrypted projects locally to edit them with your favorite IDE (VS Code, Vim, etc.) as if they were on your machine.
 - [x] **Role-Based Access Control**: Granular permission management for Admins and Developers.
 
 ---
@@ -116,6 +116,15 @@ For more detailed instructions, check the component-specific documentation:
 
 *   **[Server Documentation](server/README.md)**: Deployment, User Management, Architecture.
 *   **[Client Documentation](enc-cli/README.md)**: Command Reference, Configuration, SSH Keys.
+
+### 📚 Use Cases
+
+| Use Case | Description | Status | Documentation |
+| :--- | :--- | :--- | :--- |
+| **Host Your Own Server** | Run your ENC server and access projects securely from anywhere. | ✅ Available | [Guide](https://pranjalab.github.io/enc/use_cases/host_your_own_server.html) |
+| **Secure Collaboration** | Provide limited access to interns/contributors without IP leakage. | ✅ Available | [Guide](https://pranjalab.github.io/enc/use_cases/secure_collaboration.html) |
+| **Client-Side Deployment** | Execute encrypted projects on client servers using RAM-only decryption. | 🚧 Upcoming | [Guide](https://pranjalab.github.io/enc/use_cases/client_side_secure_deployment.html) |
+| **Git Synchronization** | Auto-commit ENC project changes to Git repositories. | 🚧 Upcoming | [Guide](https://pranjalab.github.io/enc/use_cases/git_sync.html) |
 
 ### 🌐 Full Documentation
 

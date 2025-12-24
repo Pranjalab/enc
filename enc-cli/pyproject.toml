@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "enc-cli"
-version = "1.0.0"
+version = "0.1.3"
 description = "Secure, Memory-Only Encryption for Code Execution"
 authors = [
   { name="Pranjal Bhaskare", email="pranjalab@gmail.com" },

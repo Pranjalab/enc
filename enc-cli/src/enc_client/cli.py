@@ -85,7 +85,7 @@ def interactive_unmount_timer(enc_manager, name, project_dir, timeout=5):
 def cli(ctx, version):
     """ENC Client - Secure Remote Access"""
     if version:
-        console.print("ENC Client v1.0.0")
+        console.print("ENC Client v0.1.3")
         ctx.exit()
     
     if ctx.invoked_subcommand is None:

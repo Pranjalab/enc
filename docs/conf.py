@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.abspath('../server/src'))
 project = 'ENC'
 copyright = '2025, Pranjal Bhaskare'
 author = 'Pranjal Bhaskare'
-release = '1.0.0'
+release = '0.1.3'
 
 # -- General configuration ---------------------------------------------------
 
@@ -20,6 +20,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx_rtd_theme',
+    'myst_parser',
 ]
 
 templates_path = ['_templates']
