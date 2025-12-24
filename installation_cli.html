@@ -1,0 +1,229 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ENC CLI Installation &mdash; ENC 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=469a20a4" />
+
+  
+    <link rel="shortcut icon" href="_static/enc_icon.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Server Setup Guide" href="setup_server.html" />
+    <link rel="prev" title="Introduction" href="intro.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ENC
+              <img src="_static/enc_icon.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#components">Components</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ENC CLI Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation-steps">Installation Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="setup_server.html">Server Setup Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="setup_server.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="setup_server.html#deployment">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="setup_server.html#configuration">Configuration</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user_management.html">User Management</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="user_management.html#system-admin-vs-enc-users">System Admin vs. ENC Users</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_management.html#creating-a-new-user">Creating a New User</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_management.html#managing-permissions">Managing Permissions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="project_management.html">Project Management</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#creating-a-project">Creating a Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#mounting-a-project">Mounting a Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#listing-projects">Listing Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#unmounting">Unmounting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ssh_keys.html">Managing SSH Keys</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ssh_keys.html#generating-an-ssh-key">Generating an SSH Key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ssh_keys.html#adding-keys-to-enc">Adding Keys to ENC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ssh_keys.html#option-1-using-ssh-agent-recommended">Option 1: Using SSH Agent (Recommended)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ssh_keys.html#option-2-configuring-enc">Option 2: Configuring ENC</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ssh_keys.html#authorizing-keys-on-server">Authorizing Keys on Server</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="security.html">Security</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="security.html#architecture-overview">Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="security.html#why-ssh-keys">Why SSH Keys?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="security.html#session-security">Session Security</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="hosting.html">Hosting the Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="hosting.html#building-locally">Building Locally</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hosting.html#deploying-to-github-pages">Deploying to GitHub Pages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="hosting.html#configuration-steps">Configuration Steps</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contact.html">Contact</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contact.html#support">Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contact.html#core-team">Core Team</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ENC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ENC CLI Installation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/installation_cli.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="enc-cli-installation">
+<h1>ENC CLI Installation<a class="headerlink" href="#enc-cli-installation" title="Link to this heading"></a></h1>
+<p>The ENC Client (<cite>enc-cli</cite>) allows you to connect to an ENC server, manage projects, and run secure executions from your local machine.</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<p>Before installing, ensure you have:</p>
+<ul class="simple">
+<li><p><strong>Python 3.8+</strong>: Verify with <code class="docutils literal notranslate"><span class="pre">python3</span> <span class="pre">--version</span></code>.</p></li>
+<li><p><strong>pip</strong>: The Python package installer.</p></li>
+<li><p><strong>sshfs</strong>: Required for the mounting feature (install via your package manager, e.g., <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">sshfs</span></code> or <code class="docutils literal notranslate"><span class="pre">apt</span> <span class="pre">install</span> <span class="pre">sshfs</span></code>).</p></li>
+</ul>
+</section>
+<section id="installation-steps">
+<h2>Installation Steps<a class="headerlink" href="#installation-steps" title="Link to this heading"></a></h2>
+<p>We provide an automated installer script that sets up a virtual environment and installs all dependencies.</p>
+<ol class="arabic">
+<li><p><strong>Navigate to the client directory</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>enc-cli
+</pre></div>
+</div>
+</li>
+<li><p><strong>Run the installation script</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./install.sh
+</pre></div>
+</div>
+<p>This script will:
+*   Create a virtual environment in <code class="docutils literal notranslate"><span class="pre">~/.enc-cli/venv</span></code>.
+*   Install Python dependencies (<cite>rich</cite>, <cite>click</cite>, <cite>pexpect</cite>, etc.).
+*   Symlink the <code class="docutils literal notranslate"><span class="pre">enc</span></code> executable to a directory in your PATH (e.g., <code class="docutils literal notranslate"><span class="pre">~/.local/bin</span></code>).</p>
+</li>
+<li><p><strong>Verify Installation</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span>--version
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h2>
+<p>Once installed, you must configure the CLI to point to your server.</p>
+<ol class="arabic">
+<li><p>Run the initialization command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span>config<span class="w"> </span>init
+</pre></div>
+</div>
+</li>
+<li><p>Follow the prompts:
+*   <strong>Server URL</strong>: Enter the full URL (e.g., <code class="docutils literal notranslate"><span class="pre">http://your-server.com:2222</span></code>).
+*   <strong>Username</strong>: Your assigned username.
+*   <strong>SSH Key Path</strong>: Path to your private SSH key (e.g., <code class="docutils literal notranslate"><span class="pre">~/.ssh/id_ed25519</span></code>).</p></li>
+</ol>
+<p>You can check your configuration at any time with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span>show
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="intro.html" class="btn btn-neutral float-left" title="Introduction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="setup_server.html" class="btn btn-neutral float-right" title="Server Setup Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Pranjal Bhaskare.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

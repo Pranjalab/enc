@@ -1,0 +1,217 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Server Setup Guide &mdash; ENC 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=469a20a4" />
+
+  
+    <link rel="shortcut icon" href="_static/enc_icon.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="User Management" href="user_management.html" />
+    <link rel="prev" title="ENC CLI Installation" href="installation_cli.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ENC
+              <img src="_static/enc_icon.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#components">Components</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_cli.html">ENC CLI Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_cli.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_cli.html#installation-steps">Installation Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_cli.html#configuration">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Server Setup Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#deployment">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user_management.html">User Management</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="user_management.html#system-admin-vs-enc-users">System Admin vs. ENC Users</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_management.html#creating-a-new-user">Creating a New User</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_management.html#managing-permissions">Managing Permissions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="project_management.html">Project Management</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#creating-a-project">Creating a Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#mounting-a-project">Mounting a Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#listing-projects">Listing Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#unmounting">Unmounting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ssh_keys.html">Managing SSH Keys</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ssh_keys.html#generating-an-ssh-key">Generating an SSH Key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ssh_keys.html#adding-keys-to-enc">Adding Keys to ENC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ssh_keys.html#option-1-using-ssh-agent-recommended">Option 1: Using SSH Agent (Recommended)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ssh_keys.html#option-2-configuring-enc">Option 2: Configuring ENC</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ssh_keys.html#authorizing-keys-on-server">Authorizing Keys on Server</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="security.html">Security</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="security.html#architecture-overview">Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="security.html#why-ssh-keys">Why SSH Keys?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="security.html#session-security">Session Security</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="hosting.html">Hosting the Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="hosting.html#building-locally">Building Locally</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hosting.html#deploying-to-github-pages">Deploying to GitHub Pages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="hosting.html#configuration-steps">Configuration Steps</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contact.html">Contact</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contact.html#support">Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contact.html#core-team">Core Team</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ENC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Server Setup Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/setup_server.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="server-setup-guide">
+<h1>Server Setup Guide<a class="headerlink" href="#server-setup-guide" title="Link to this heading"></a></h1>
+<p>The ENC Server handles the secure storage and execution of your projects. It is deployed as a Docker container.</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Docker Engine</strong>: Install from <a class="reference external" href="https://docs.docker.com/engine/install/">docs.docker.com</a>.</p></li>
+<li><p><strong>Docker Compose</strong>: usually included with Docker Desktop or modern Docker Engine.</p></li>
+<li><p><strong>Port 2222</strong>: Ensure port 2222 is open and free on your host machine.</p></li>
+</ul>
+</section>
+<section id="deployment">
+<h2>Deployment<a class="headerlink" href="#deployment" title="Link to this heading"></a></h2>
+<ol class="arabic">
+<li><p><strong>Navigate to the server directory</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>server
+</pre></div>
+</div>
+</li>
+<li><p><strong>Run the deployment script</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./deploy.sh
+</pre></div>
+</div>
+<p>Or manually using Docker Compose:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build
+</pre></div>
+</div>
+</li>
+<li><p><strong>Verify Status</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>ps
+</pre></div>
+</div>
+<p>You should see a container named <code class="docutils literal notranslate"><span class="pre">enc_ssh_server</span></code> running and listening on port 2222.</p>
+</li>
+</ol>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h2>
+<p>The server configuration (volumes, ports) is managed via <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code>.</p>
+<ul class="simple">
+<li><p><strong>Storage</strong>: User data is persisted in the <code class="docutils literal notranslate"><span class="pre">enc_server_data</span></code> volume.</p></li>
+<li><p><strong>SSH Host Keys</strong>: Server keys are persisted in <code class="docutils literal notranslate"><span class="pre">./ssh/host_keys/</span></code> to prevent re-keying warnings on clients.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation_cli.html" class="btn btn-neutral float-left" title="ENC CLI Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="user_management.html" class="btn btn-neutral float-right" title="User Management" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Pranjal Bhaskare.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
