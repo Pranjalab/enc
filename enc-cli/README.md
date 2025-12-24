@@ -1,79 +1,140 @@
-# ENC Client: Secure Remote Access
+# ENC Client Documentation
 
-The **ENC Client** (`enc-cli`) is your secure gateway. It empowers you to access your encrypted projects from anywhere and manages your secure workflow sessions.
+The **ENC Client** (`enc-cli`) is your secure gateway to the ENC ecosystem. It allows you to create, manage, and edit encrypted projects from your local machine, seamlessly integrating them with your favorite tools.
 
-## 🌍 Feature 3: Access from Anywhere
-Whether you are on a laptop in a cafe or a workstation at home, `enc-cli` connects you securely to your project server.
+## 🚀 Installation
 
-- **Secure Session Management**:
-    - **Login**: Establishes a secure tunnel and unlocks your keys in memory.
-    - **Work**: Run commands, edit files, and execute code remotely.
-    - **Logout**: Instantly wipes local keys and locks the remote session.
+### Prerequisites
+*   Python 3.8+
+*   `pip`
+*   `sshfs` (Optional, required for mounting projects)
 
-- **Auto-Locking**:
-    - Closing your terminal or internet disconnection automatically triggers a session lock, ensuring no unattended access.
+### Installer Script
+We provide an easy installer script that handles dependencies and proper path setup:
 
-## 🔄 Smart Git Synchronization (Beta)
-ENC integrates deeply with your workflow to ensure specific version control safety.
-
-When you finish a session (Logout/Close):
-1.  **Auto-Commit**: ENC detects changes in your workspace.
-2.  **Flexible Modes**:
-    *   **Encrypted Mode**: Commits encrypted blobs to public/untrusted repos (safe coding on GitHub).
-    *   **Decrypted Mode**: Commits plaintext to internal secure/self-hosted GitLabs.
-
----
-
-## 🚀 Installation & Setup
-
-### 1. Install
 ```bash
 cd enc-cli
 ./install.sh
 ```
 
-### 2. Configure
-Point the CLI to your ENC Server.
+This will:
+1.  Create a virtual environment.
+2.  Install dependencies (`rich`, `click`, etc.).
+3.  Symlink the `enc` binary to your local bin path (e.g., `~/.local/bin/enc`).
+
+To verify installation:
+```bash
+enc --version
+```
+
+---
+
+## ⚙️ Configuration
+
+Before you can login, you need to tell the CLI where your server is located.
+
+### 1. Initialize Config
+Run the interactive configuration wizard:
+
 ```bash
 enc config init
-# URL: http://your-server-ip:2222
-# User: your-username
-# SSH Key: [Leave empty if using ssh-agent/ssh-add]
 ```
 
-### 3. SSH Setup (Important)
-Ensure your SSH agent is running and has your ENC key loaded so the CLI can connect without password prompts.
-```bash
-ssh-add ~/.ssh/enc_key
+You will be asked for:
+*   **Server URL**: The address of your ENC Server (e.g., `http://myserver.com:2222`).
+*   **Username**: Your assigned username.
+*   **SSH Key Path**: Path to your private SSH key (e.g., `~/.ssh/id_ed25519`).
 
-
-#### Alternative: Manual Configuration
-If you prefer not to use an agent or config file, you can explicitly tell ENC which key to use:
+To view your current configuration:
 ```bash
-enc set-ssh-key ~/.ssh/enc_key
+enc show
 ```
 
-### 4. Login
-Start your secure session.
+### 2. SSH Key Setup
+For a seamless experience, we recommend using an SSH agent or specifying your key in the config.
+
+**Using SSH Agent:**
+```bash
+ssh-add -K ~/.ssh/my_enc_key
+```
+
+**Using Config File:**
+If you set the key path during `enc config init`, the CLI will automatically use it for all connections.
+
+---
+
+## 🔐 Workflow Guide
+
+### 1. Login
+Start your secure session. This establishes the encrypted tunnel.
 ```bash
 enc login
 ```
+
+### 2. Managing Projects
+
+**Create a New Project:**
+```bash
+enc project init <project-name>
+# You will be prompted to set a unique password for this project vault.
+```
+
+**List Projects:**
+```bash
+enc project list
+# Shows all your projects and their mount status.
+```
+
+**Remove a Project:**
+```bash
+enc project remove <project-name>
+# WARNING: This permanently deletes the encrypted vault from the server.
+```
+
+### 3. Editing Code (Mounting)
+This is the magic of ENC. You can mount a remote encrypted project to a local folder.
+
+```bash
+mkdir ./my-work-folder
+enc project mount <project-name> ./my-work-folder
+# Enter project password when prompted
+```
+
+Once mounted:
+*   Open `./my-work-folder` in VS Code, Vim, or any editor.
+*   Files you see are plaintext.
+*   Files written to disk are instantly encrypted and saved on the server.
+
+### 4. Logout
+When you are done, logout to secure your session.
+
+```bash
+enc logout
+```
+**Safety Feature**: This command automatically detects and force-unmounts any active project connections to ensure no plaintext access remains.
 
 ---
 
 ## 🛠 Command Reference
 
-| Command | Action |
+| Command | Description |
 | :--- | :--- |
-| `enc check-connection` | Verify you can reach the server. |
-| `enc login` | Authenticate and unlock your secure session. |
-| `enc status` | Check if your session is active/secure. |
-| `enc projects` | List or switch active projects. |
-| `enc exec <cmd>` | Run a command securely on the server. |
+| `enc config init` | Setup or update local configuration. |
+| `enc login` | Authenticate with the server. |
+| `enc logout` | Close session and unmount all projects. |
+| `enc user create` | (Admin) Create a new user account. |
+| `enc project init` | Create a new encrypted project vault. |
+| `enc project list` | View available projects. |
+| `enc project mount` | Mount a remote project locally via SSHFS. |
+| `enc project unmount` | Unmount a specific project. |
+| `enc status` | Check current session validity. |
 
 ---
 
 ## 🗑 Uninstallation
+
+To remove the CLI and its virtual environment:
+
 ```bash
 ./uninstall.sh
 ```

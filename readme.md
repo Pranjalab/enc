@@ -1,80 +1,140 @@
-# ENC: Encrypted Native Code
+# ENC: The Encrypted Coding Environment
 
-> **"Secure your code at rest, execute it in memory, access it from anywhere."**
+> **Ever wondered how secure your scripts and algorithms really are once they’re deployed on a server?**
 
-![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Status: Beta](https://img.shields.io/badge/Status-Beta-orange.svg)
+When you deploy code to a standard server, it sits there in plaintext—accessible to anyone with root access, physical access to the disk, or a lucky exploit. 
 
-**ENC** is a comprehensive security ecosystem designed to protect your intellectual property. It ensures that your source code is never exposed on disk, providing a secure lifecycle from storage to execution to remote access.
-
----
-
-## 🌟 Core Features
-
-### 1. 🛡️ Secure Project Management
-**Manage your projects from an SSH-secured bastion that locks down your code.**
-*   **Zero-Trust Storage**: All project files are stored locally encrypted (AES-256). No admin or intruder can read your source code on the disk.
-*   **RBAC Secured**: Access is strictly managed via Role-Based Access Control on a hardened SSH server (Port 2222).
-*   **Isolation**: Each project exists in a secure container, isolated from the host OS.
-
-### 2. ⚡ Runtime Encrypted Execution
-**Deploy and run code directly from RAM, bypassing the disk entirely.**
-*   **Memory-Only Decryption**: When you run a script, ENC decrypts it strictly into memory buffers.
-*   **Supported Runtimes**: Execute secure code using **Python**, **Docker**, or internal **APIs**.
-*   **No Forensic Trace**: If the server pulls the plug, your code vanishes. No temporary files found in `/tmp` or swap.
-
-### 3. 🌍 Secure Remote Access & Workflow
-**Work from anywhere using the `enc-cli` with a session-managed workflow.**
-*   **Secure Sessions**: Login via the CLI to start a secure usage session.
-*   **Auto-Locking**: When you logout or your session times out, all memory is wiped and keys are dropped.
-*   **Smart Git Sync**: (Optional) Automatically commits your work to your Git repository when your session closes—choose between storing **Encrypted** (for public repos) or **Decrypted** (for private secure repos) backups.
+To solve this problem, we’re excited to introduce the **ENC Project**—a secure, encrypted execution environment that ensures only **you** can access and manage your projects, from anywhere.
 
 ---
 
-## 🏗 Architecture
+## 🌟 Overview
 
-| Component | Role |
-| :--- | :--- |
-| **[Server (The Vault)](./server/README.md)** | Hosts the encrypted projects and handles the Runtime Encrypted Execution. Manages user identities and git synchronization. |
-| **[Client (The Key)](./enc-cli/README.md)** | Your secure gateway. Connects from anywhere via SSH to manage sessions, configuration, and project access. |
+ENC is designed to protect your intellectual property and sensitive logic by ensuring your code is **always encrypted at rest** and only decrypted **in memory** during active execution.
 
----
+The system consists of two main components:
 
-## 🚀 Quick Start in 5 Minutes
-
-### 1. Deploy the Server
-Start the secure execution environment using Docker.
-```bash
-cd server
-docker compose up -d --build
-# Secure Bastion active on localhost:2222
-```
-
-### 2. Install the User Client
-Get the tool to access your server.
-```bash
-cd ../enc-cli
-./install.sh
-source ~/.zshrc
-```
-
-### 3. Connect & Secure Your Work
-Login to the fortress.
-```bash
-enc config init
-# URL: http://localhost:2222 | User: admin
-
-enc login
-# Default Password: secure_admin_pass
-```
-
-### 4. Verify Status
-Confirm you are in a secure, memory-only session.
-```bash
-enc status
-# > System Secure. Session Active.
-```
+- **🔐 ENC Server**: A hardened, SSH-based fortress that hosts your encrypted vaults. It can be deployed anywhere (AWS, VPS, On-Prem) and ensures that even the server administrator cannot peek into your project files.
+- **💻 ENC Client (`enc-cli`)**: A powerful CLI tool that runs on your local machine. It creates a secure tunnel to the server, managing encryption keys and allowing you to work on your projects seamlessly.
 
 ---
 
-_Protect your code. Trust no disk. execute via RAM._
+## ✨ Key Features
+
+- **🛡️ End-to-End Security**: All communication is secured via SSH tunnels.
+- **🔒 Project-Level Encryption**: Each project is an independent encrypted vault (using `gocryptfs`). Keys are never stored on the server's disk.
+- **👁️ Session Monitoring**: Active sessions are monitored. Closing your terminal locks the session instantly.
+- **🚀 Runtime Encryption**: Code is decrypted on-the-fly into a secure RAM buffer for execution and wiped immediately after.
+- **⚡ SSHFS Integration**: Mount your remote encrypted projects locally to editing them with your favorite IDE (VS Code, Vim, etc.) as if they were on your machine.
+- [x] **Role-Based Access Control**: Granular permission management for Admins and Developers.
+
+---
+
+## 🔮 Roadmap & Upcoming Features
+
+We are constantly evolving ENC to make it the standard for secure engineering.
+
+- [ ] **Smart Git Synchronization**: Auto-commit logic that encrypts secrets before pushing to public repos.
+- [ ] **VS Code Extension**: Native integration to manage, mount, and edit projects directly from your IDE.
+- [ ] **Team Vaults**: Shared encrypted workspaces for secure team collaboration.
+- [ ] **Compliance Audit Logs**: Detailed, exportable logs of every access event for enterprise compliance.
+
+---
+
+## 📚 Table of Contents
+
+- [**Installation & Setup**](#-installation--setup)
+    - [Server Setup](server/README.md)
+    - [Client CLI Setup](enc-cli/README.md)
+- [**Quick Start Guide**](#-quick-start)
+- [**Documentation**](#-documentation)
+- [**Contributing**](#-contributing)
+- [**License**](#-license)
+
+---
+
+## 🚀 Installation & Setup
+
+### 1. The Server
+You need an ENC Server to host your projects. You can run one on your local machine for testing or deploy it to a remote VPS.
+👉 **[Read the Server Setup Guide](server/README.md)**
+
+### 2. The Client
+Install the `enc` CLI to communicate with your server.
+👉 **[Read the Client Installation Guide](enc-cli/README.md)**
+
+---
+
+## ⚡ Quick Start
+
+Once you have both installed:
+
+1.  **Initialize Configuration**:
+    ```bash
+    enc config init
+    # Follow the prompts to set your Username and Server URL
+    ```
+
+2.  **Login**:
+    ```bash
+    enc login
+    ```
+
+3.  **Create a New Project**:
+    ```bash
+    enc project init my-secret-app
+    ```
+
+4.  **Mount & Edit**:
+    ```bash
+    mkdir ./my-app-edit
+    enc project mount my-secret-app ./my-app-edit
+    ```
+    *Now open `./my-app-edit` in VS Code. All files you write are encrypted instantly on the server.*
+
+5.  **Logout**:
+    ```bash
+    enc logout
+    # Safely unmounts all projects and closes the secure tunnel.
+    ```
+
+---
+
+## 📖 Documentation
+
+For more detailed instructions, check the component-specific documentation:
+
+*   **[Server Documentation](server/README.md)**: Deployment, User Management, Architecture.
+*   **[Client Documentation](enc-cli/README.md)**: Command Reference, Configuration, SSH Keys.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Whether it's reporting a bug, suggesting a feature, or writing code, your help is appreciated.
+
+1.  **Fork the Project**
+2.  **Create your Feature Branch** (`git checkout -b feature/AmazingFeature`)
+3.  **Commit your Changes** (`git commit -m 'Add some AmazingFeature'`)
+4.  **Push to the Branch** (`git push origin feature/AmazingFeature`)
+5.  **Open a Pull Request**
+
+### Contributors
+
+<a href="https://github.com/pranjalab" align="center">
+  <img src="https://github.com/pranjalab.png" alt="Pranjal" width="100" height="100" style="border-radius:50%;" />
+</a>  
+  
+**Pranjal Bhaskare** 
+
+### Acknowledgements
+Special thanks to the open-source tools that make this possible:
+*   [gocryptfs](https://github.com/rfjakob/gocryptfs)
+*   [sshfs](https://github.com/libfuse/sshfs)
+*   [Rich](https://github.com/Textualize/rich)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
