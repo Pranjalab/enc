@@ -38,15 +38,24 @@ def check_server_permission(ctx):
 
 
     user = getpass.getuser()
-    cmd_path = ctx.command_path.replace("enc ", "")
+    cmd_path = ctx.command_path.split(" ")[-1] # get leaf command
     
+    # Check session for all commands except login
+    if cmd_path != "server-login":
+        session_id = ctx.obj.get("session_id")
+        server = EncServer()
+        is_valid, msg = server.verify_session(session_id)
+        if not is_valid:
+             # Return JSON error for client parsing
+             click.echo(json.dumps({"status": "error", "message": f"Session Verification Failed: {msg}"}))
+             ctx.exit(1)
+
     # Check if user exists in policy
     if auth.get_user_role(user) is None:
          console.print(f"[bold red]Access Denied:[/bold red] User '{user}' is not registered. Please contact your admin to add the user.")
          ctx.exit(1)
 
     if not auth.is_allowed(user, cmd_path):
-        import json
         error_res = {"status": "error", "message": f"Access Denied: User '{user}' is not allowed to run '{cmd_path}'."}
         click.echo(json.dumps(error_res))
         ctx.exit(1)
@@ -130,26 +139,19 @@ def server_project_mount(ctx, project_name, password):
     """Internal: Mount encrypted project."""
     check_server_permission(ctx)
     
-    import getpass
-    import json
-    user = getpass.getuser()
-    if not auth.has_project_access(user, project_name):
-        click.echo(json.dumps({"status": "error", "message": "Access Denied: You do not have access to this project."}))
-        return
+    server = EncServer()
+    success, res = server.project_mount(project_name, password, ctx.obj.get("session_id"))
+    click.echo(json.dumps(res))
 
-    from enc_server.gocryptfs_handler import GocryptfsHandler
-    handler = GocryptfsHandler()
-    success = handler.mount_project(project_name, password)
-    
-    if success:
-        user = getpass.getuser()
-        res = {"status": "success", "mount_point": f"/home/{user}/.enc/run/master/{project_name}"}
-        log_result(ctx, res)
-        click.echo(json.dumps(res))
-    else:
-        res = {"status": "error"}
-        log_result(ctx, res)
-        click.echo(json.dumps(res))
+@cli.command("server-project-remove")
+@click.argument("project_name")
+@click.pass_context
+def server_project_remove(ctx, project_name):
+    """Remove a project securely."""
+    check_server_permission(ctx)
+    server = EncServer()
+    success, res = server.remove_project(project_name, ctx.obj.get("session_id"))
+    click.echo(json.dumps(res))
 
 @cli.command("server-project-list")
 @click.pass_context
@@ -170,32 +172,11 @@ def server_project_unmount(ctx, project_name):
     """Internal: Unmount project."""
     check_server_permission(ctx)
     
-    import getpass
-    import json
-    user = getpass.getuser()
-    if not auth.has_project_access(user, project_name):
-        click.echo(json.dumps({"status": "error", "message": "Access Denied: You do not have access to this project."}))
-        return
-
-    from enc_server.gocryptfs_handler import GocryptfsHandler
-    handler = GocryptfsHandler()
-    handler.unmount_project(project_name)
-    res = {"status": "success"}
-    log_result(ctx, res)
-    click.echo(json.dumps(res))
-
-@cli.command("server-project-remove")
-@click.argument("project_name")
-@click.pass_context
-def server_project_remove(ctx, project_name):
-    """Internal: Permanently remove a project."""
-    check_server_permission(ctx)
-    
     server = EncServer()
-    res = server.delete_project(project_name, ctx.obj.get("session_id"))
-    
-    log_result(ctx, res)
+    success, res = server.project_unmount(project_name, ctx.obj.get("session_id"))
     click.echo(json.dumps(res))
+
+
 
 @cli.command("server-project-run")
 @click.argument("project_name")
@@ -204,26 +185,10 @@ def server_project_remove(ctx, project_name):
 def server_project_run(ctx, project_name, cmd_str):
     """Internal: Run a command in project vault."""
     check_server_permission(ctx)
-    import getpass
-    import os
-    import subprocess
     
-    user = getpass.getuser()
-    if not auth.has_project_access(user, project_name):
-        click.echo(json.dumps({"status": "error", "message": "Access Denied"}))
-        return
-
-    work_dir = os.path.expanduser(f"~/.enc/run/master/{project_name}")
-    try:
-        # Run and capture for logging
-        proc = subprocess.run(cmd_str, shell=True, cwd=work_dir, capture_output=True, text=True)
-        output = f"RET: {proc.returncode}\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}"
-        log_result(ctx, output)
-        # Still print to user
-        click.echo(output)
-    except Exception as e:
-        log_result(ctx, str(e))
-        click.echo(str(e))
+    server = EncServer()
+    success, res = server.project_run(project_name, cmd_str, ctx.obj.get("session_id"))
+    click.echo(res)
 
 @cli.command("server-project-sync")
 @click.argument("project_name")
@@ -250,7 +215,8 @@ def list_projects(ctx):
     from rich.table import Table
     
     user = getpass.getuser()
-    projects = auth.get_user_projects(user)
+    server = EncServer()
+    projects = server.get_user_projects(user)
     
     table = Table(title=f"Accessible Projects for {user}")
     table.add_column("Project Name", style="green")
@@ -331,18 +297,10 @@ def user_list(ctx, json_output):
     from rich.table import Table
 
     try:
-        users = auth.get_all_users()
+        server = EncServer()
+        res = server.get_all_users(ctx.obj.get("session_id") if json_output else None)
 
         if json_output:
-             users_data = []
-             for u, record in users.items():
-                 role = "user"
-                 if isinstance(record, dict):
-                     role = record.get("role", "user")
-                 users_data.append({"username": u, "role": role})
-                 
-             res = {"status": "success", "users": users_data}
-             log_result(ctx, res)
              click.echo(json.dumps(res))
              return
 
@@ -351,13 +309,11 @@ def user_list(ctx, json_output):
         table.add_column("Role", style="magenta")
         table.add_column("Permissions")
 
-        for user, record in users.items():
-            if isinstance(record, dict):
-                role = record.get("role", "user")
-                perms = ", ".join(record.get("permissions", []))
-                table.add_row(user, role, perms)
-            elif isinstance(record, list):
-                table.add_row(user, "legacy", ", ".join(record))
+        for user_entry in res.get("users", []):
+            username = user_entry.get("username")
+            role = user_entry.get("role")
+            perms = ", ".join(user_entry.get("permissions", []))
+            table.add_row(username, role, perms)
             
         console.print(table)
     except Exception as e:

@@ -44,8 +44,9 @@ RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/
     echo "ClientAliveCountMax 3" >> /etc/ssh/sshd_config && \
     echo "TCPKeepAlive yes" >> /etc/ssh/sshd_config
 
-# Create admin user
-RUN adduser -D -s /bin/bash admin && \
+# Create enc group and admin user
+RUN addgroup enc && \
+    adduser -D -s /bin/bash -G enc admin && \
     echo "admin ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/admin && \
     chmod 0440 /etc/sudoers.d/admin
 
@@ -61,7 +62,9 @@ RUN pip install . --break-system-packages
 # But we copy it to bin for easy access as simple script
 COPY server/src/enc_server/shell.py /usr/local/bin/enc-shell
 COPY server/config/policy.json /etc/enc/policy.json
-RUN chmod +x /usr/local/bin/enc-shell && chmod 644 /etc/enc/policy.json
+RUN chmod +x /usr/local/bin/enc-shell && \
+    chown root:enc /etc/enc/policy.json && \
+    chmod 664 /etc/enc/policy.json
 ENV ENC_MODE=SERVER
 
 # Setup Entrypoint

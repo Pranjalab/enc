@@ -91,20 +91,42 @@ def cli(ctx, version):
     if ctx.invoked_subcommand is None:
         console.print(ctx.get_help())
 
-@cli.group("show")
-def show_group():
+@cli.group("show", invoke_without_command=True)
+@click.option("-v", "--verbose", is_flag=True, help="Show full configuration details.")
+@click.option("-a", "--access", is_flag=True, help="Show access rights.")
+@click.pass_context
+def show_group(ctx, verbose, access):
     """Show configuration or access rights."""
-    pass
+    if ctx.invoked_subcommand is None:
+        if access:
+            ctx.invoke(show_access)
+        else:
+            ctx.invoke(show_config, verbose=verbose)
 
 @show_group.command("config")
-def show_config():
+@click.option("-v", "--verbose", is_flag=True, help="Show full configuration details.")
+def show_config(verbose):
     """Display current configuration."""
     cfg = enc_manager.config
+    session_id = cfg.get("session_id")
+    
     table = Table(title="ENC Configuration")
     table.add_column("Key", style="cyan")
     table.add_column("Value", style="green")
     
+    # Calculate active projects
+    active_projects = "None"
+    if session_id:
+        projects = enc_manager.session_manager.get_active_projects(session_id)
+        if projects:
+            active_projects = ", ".join(projects)
+
     for k, v in cfg.items():
+        if k in ["url", "ssh_key"] and not verbose:
+            continue
+        if k == "context": # Replace context with active projects
+            k = "active_projects"
+            v = active_projects
         table.add_row(k, str(v))
         
     console.print(table)
@@ -112,8 +134,30 @@ def show_config():
 @show_group.command("access")
 def show_access():
     """Show access rights from session file."""
-    # Placeholder for session logic
-    console.print("[yellow]No active session found.[/yellow]")
+    session_id = enc_manager.config.get("session_id")
+    if not session_id:
+        console.print("[yellow]No active session found. Login to see access rights.[/yellow]")
+        return
+
+    session_data = enc_manager.get_session_data()
+    if not session_data:
+        console.print("[red]Invalid session data.[/red]")
+        return
+        
+    allowed = session_data.get("allowed_commands", [])
+    username = session_data.get("username", "Unknown")
+    
+    table = Table(title=f"Access Rights for {username}")
+    table.add_column("Permission Type", style="cyan")
+    table.add_column("Details", style="green")
+    
+    if "*" in allowed:
+         table.add_row("Root Access", "All Commands Allowed (*)")
+    else:
+         for cmd in allowed:
+             table.add_row("Command", cmd)
+             
+    console.print(table)
 
 @cli.command("set-url")
 @click.argument("url")
@@ -170,6 +214,15 @@ def init(path):
     enc_manager.init_config(url, username, ssh_key, target_path=target_path)
     console.print(f"[bold green]Configuration initialized at {target_path}[/bold green]")
     console.print("Run 'enc check-connection' to verify.")
+
+@cli.command("internal-watchdog", hidden=True)
+@click.option("--ppid", type=int, help="Parent PID to monitor")
+def internal_watchdog(ppid):
+    """Hidden command to monitor session in background."""
+    if not enc_manager.config.get("session_id"):
+        console.print("[yellow]Please login first.[/yellow]")
+        return
+    enc_manager.session_manager.monitor_session(enc_manager.logout, ppid=ppid)
 
 # --- Connection Commands ---
 
@@ -300,9 +353,23 @@ def project_list():
         
     console.print(table)
 
+@project_group.command("remove")
+@click.argument("name")
+@click.option("--password", "-p", default=None, help="Project password")
+def project_remove(name, password):
+    """Permanently delete a project."""
+    if not enc_manager.config.get("session_id"):
+        console.print("[yellow]Please login first.[/yellow]")
+        return
+    
+    if not password:
+         password = click.prompt("Enter Project Password (required for verification)", hide_input=True)
+         
+    enc_manager.project_remove(name, password)
+
 @project_group.command("mount")
 @click.argument("name")
-@click.argument("directory", required=False, default=".", type=click.Path(file_okay=False))
+@click.argument("directory", required=False, default="./enc_project", type=click.Path(file_okay=False))
 @click.option("--password", "-p", default=None, help="Project password (skip prompt)")
 def project_mount(name, directory, password):
     """Mount project for development in a specific directory."""
@@ -332,7 +399,8 @@ def project_mount(name, directory, password):
 
 @project_group.command("unmount")
 @click.argument("name", required=False)
-def project_unmount(name):
+@click.option("--forced", "-f", default=False, help="Force unmount")
+def project_unmount(name, forced):
     """Unmount and close bridge for a project."""
     if not enc_manager.config.get("session_id"):
         console.print("[yellow]Please login first.[/yellow]")
@@ -343,7 +411,7 @@ def project_unmount(name):
         return
         
     console.print(f"Unmounting project '[cyan]{name}[/cyan]'...")
-    if enc_manager.project_unmount(name):
+    if enc_manager.project_unmount(name, forced=forced):
         console.print(f"[bold green]Project unmounted and bridge closed.[/bold green]")
 
 @project_group.command("sync")
@@ -391,6 +459,9 @@ def project_run(name, command):
 
 @cli.command()
 def logout():
+    if not enc_manager.config.get("session_id"):
+        console.print("[yellow]Please login first.[/yellow]")
+        return
     """Logout and clear local sessions."""
     if enc_manager.logout():
         console.print("[bold green]Logged out successfully.[/bold green] Local sessions cleared.")

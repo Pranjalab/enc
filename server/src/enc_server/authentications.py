@@ -24,7 +24,7 @@ class Authentication:
         ROLE_DEV: [
             "status", "server-login", "server-logout",
             "init", "server-project-init", "server-project-mount", "server-project-unmount", "server-project-sync", "server-project-run",
-            "server-project-list", "project list"
+            "server-project-list", "project list", "server-project-remove"
         ]
     }
 
@@ -57,10 +57,16 @@ class Authentication:
         try:
             with open(self.POLICY_FILE, 'w') as f:
                 f.write(policy_json)
-        except PermissionError:
+        except Exception as e:
+            # Fallback to sudo if permission error or others
             import subprocess
-            proc = subprocess.Popen(["sudo", "tee", self.POLICY_FILE], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
-            proc.communicate(input=policy_json.encode())
+            try:
+                proc = subprocess.Popen(["sudo", "tee", self.POLICY_FILE], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                stdout, stderr = proc.communicate(input=policy_json.encode())
+                if proc.returncode != 0:
+                     print(f"ERROR: Failed to save policy: {e} | Sudo Error: {stderr.decode()}", flush=True)
+            except Exception as sudo_e:
+                print(f"ERROR: Failed to save policy: {e} | Sudo Exception: {sudo_e}", flush=True)
 
     def get_all_users(self):
         """Get all users from the policy."""
@@ -72,27 +78,6 @@ class Authentication:
         if isinstance(user_record, dict):
             return user_record.get("role", self.ROLE_DEV)
         return None
-
-    def get_user_projects(self, username):
-        """Get the list of project names for a user."""
-        user_record = self.policy.get("users", {}).get(username)
-        if isinstance(user_record, dict):
-            projs = user_record.get("projects", [])
-            if isinstance(projs, dict):
-                return list(projs.keys())
-            return projs
-        return []
-
-    def get_user_project_metadata(self, username):
-        """Get the detailed project dictionary for a user."""
-        user_record = self.policy.get("users", {}).get(username)
-        if isinstance(user_record, dict):
-            projs = user_record.get("projects", {})
-            if isinstance(projs, list):
-                # Convert legacy list to dict if needed for viewing
-                return {p: {"mount_path": None, "vault_path": None, "exec": None} for p in projs}
-            return projs
-        return {}
 
     def get_user_permissions(self, username):
         """Get all permissions (commands) for a user."""
@@ -110,56 +95,6 @@ class Authentication:
             perms.update(user_record)
             
         return sorted(list(perms))
-
-    def add_user_project(self, username, project_name, metadata=None):
-        """Add a project (with optional metadata) to a user's list."""
-        if username == "admin":
-             # Admin can technically have projects too now that we standardized
-             pass
-            
-        if "users" not in self.policy:
-            self.policy["users"] = {}
-        if username not in self.policy["users"]:
-            self.policy["users"][username] = {"role": self.ROLE_DEV, "permissions": self.PERMISSIONS[self.ROLE_DEV], "projects": {}}
-        
-        user_record = self.policy["users"][username]
-        
-        # Legacy conversion for user record itself
-        if isinstance(user_record, list): 
-             self.policy["users"][username] = {"role": self.ROLE_DEV, "permissions": user_record, "projects": {}}
-             user_record = self.policy["users"][username]
-
-        if "projects" not in user_record:
-            user_record["projects"] = {}
-        
-        # Prepare default metadata
-        if metadata is None:
-             metadata = {"mount_path": None, "vault_path": None, "exec": None}
-
-        # Add or Update
-        if project_name not in user_record["projects"]:
-            user_record["projects"][project_name] = metadata
-            self.save_policy()
-        else:
-            # Update existing metadata
-            user_record["projects"][project_name].update(metadata)
-            self.save_policy()
-
-    def remove_user_project(self, username, project_name):
-        """Remove a project from a user's list."""
-        user_record = self.policy.get("users", {}).get(username)
-        if isinstance(user_record, dict) and "projects" in user_record:
-            projects = user_record["projects"]
-            
-            # Dict removal
-            if project_name in projects:
-                del projects[project_name]
-                self.save_policy()
-
-    def has_project_access(self, username, project_name):
-        """Check if a user has access to a project."""
-        projects = self.get_user_projects(username)
-        return project_name in projects
 
     def _check_user_in_policy(self, username):
         """Check if a user is in the policy."""

@@ -29,21 +29,26 @@ class GocryptfsHandler:
              
         cipher_dir.mkdir(parents=True)
         
-        # gocryptfs -init -passfile <(echo pass) CIPHERDIR
-        # We handle password via stdin to be secure? 
-        # Or -extpass "echo 'pass'"
+        # Use temp file for password to avoid stdin pipe issues in non-interactive/SSH environments
+        import tempfile
+        passfile_path = None
         
         try:
-            cmd = ["gocryptfs", "-init", "-q", str(cipher_dir)]
+            with tempfile.NamedTemporaryFile(mode='w', delete=False) as tf:
+                tf.write(password)
+                passfile_path = tf.name
+            
+            # Secure the temp file (though standard tempfile usually does proper perms, explicit is safe)
+            os.chmod(passfile_path, 0o600)
+
+            cmd = ["gocryptfs", "-init", "-q", "-passfile", passfile_path, str(cipher_dir)]
             console.print(f"Initializing vault at {cipher_dir}...")
             
-            # gocryptfs -init prompts for password twice (init and confirm)
-            # We must pass the same password twice followed by newlines.
-            proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            stdout, stderr = proc.communicate(input=f"{password}\n{password}\n")
+            # Run without piping (inherit output to capture errors in logs if any)
+            res = subprocess.run(cmd, capture_output=True, text=True)
             
-            if proc.returncode != 0:
-                raise Exception(f"Gocryptfs init failed: {stderr}")
+            if res.returncode != 0:
+                raise Exception(f"Gocryptfs init failed: {res.stderr}")
 
             console.print(f"[green]Vault initialized for {project_name}[/green]")
 
@@ -52,10 +57,13 @@ class GocryptfsHandler:
             
         except Exception as e:
             console.print(f"[red]Error:[/red] {e}")
-            # cleanup
+            # cleanup vault if empty
             if cipher_dir.exists() and not any(cipher_dir.iterdir()):
                 cipher_dir.rmdir()
             return False
+        finally:
+             if passfile_path and os.path.exists(passfile_path):
+                 os.unlink(passfile_path)
 
     def mount_project(self, project_name, password):
         """Mount the project to the run directory."""
@@ -72,16 +80,22 @@ class GocryptfsHandler:
             console.print(f"[yellow]{project_name} is already mounted.[/yellow]")
             return True
 
-        try:
-            cmd = ["gocryptfs", "-q", str(cipher_dir), str(mount_point)]
-            
-            # Pass password via stdin
-            # Note: gocryptfs reads password from stdin by default if no other option
-            proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            stdout, stderr = proc.communicate(input=f"{password}\n")
+        # Use temp file for password
+        import tempfile
+        passfile_path = None
 
-            if proc.returncode != 0:
-                 raise Exception(f"Mount failed: {stderr}")
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', delete=False) as tf:
+                tf.write(password)
+                passfile_path = tf.name
+            os.chmod(passfile_path, 0o600)
+            
+            cmd = ["gocryptfs", "-q", "-passfile", passfile_path, str(cipher_dir), str(mount_point)]
+            
+            res = subprocess.run(cmd, capture_output=True, text=True)
+
+            if res.returncode != 0:
+                 raise Exception(f"Mount failed: {res.stderr}")
                  
             console.print(f"[green]Mounted {project_name} to {mount_point}[/green]")
             return True
@@ -89,6 +103,9 @@ class GocryptfsHandler:
         except Exception as e:
              console.print(f"[red]Mount Error:[/red] {e}")
              return False
+        finally:
+             if passfile_path and os.path.exists(passfile_path):
+                 os.unlink(passfile_path)
 
     def unmount_project(self, project_name):
         """Unmount the project."""

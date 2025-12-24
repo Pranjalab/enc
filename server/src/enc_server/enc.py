@@ -26,17 +26,75 @@ class EncServer:
         self.session = Session()
             
     def load_config(self):
-        # Placeholder for Global Server Config (if distinct from policy.json)
-        # Using /etc/enc/policy.json for RBAC usually.
-        pass
+        """Load the user's local server-side config."""
+        if not self.config_file.exists():
+            return {}
+        try:
+             with open(self.config_file, 'r') as f:
+                 return json.load(f)
+        except Exception as e:
+             console.print(f"[yellow]Warning: Failed to load user config: {e}[/yellow]")
+             return {}
+
+    def save_user_config(self, config):
+        """Save the user's local server-side config."""
+        try:
+            with open(self.config_file, 'w') as f:
+                json.dump(config, f, indent=4)
+        except Exception as e:
+            console.print(f"[red]Error saving config: {e}[/red]")
+
+    def add_project_to_config(self, project_name, metadata):
+        """Add or update a project in user config."""
+        config = self.load_config()
+        projects = config.get("projects", {})
+        projects[project_name] = metadata
+        config["projects"] = projects
+        self.save_user_config(config)
+
+    def remove_project_from_config(self, project_name):
+        """Remove a project from user config."""
+        config = self.load_config()
+        projects = config.get("projects", {})
+        if project_name in projects:
+            del projects[project_name]
+            config["projects"] = projects
+            self.save_user_config(config)
+
+    def get_user_projects_from_config(self):
+        """Get all projects from user config."""
+        config = self.load_config()
+        return config.get("projects", {})
+
+    def has_project_access(self, project_name):
+        """Check if project exists in user config."""
+        # Simple ownership check: if it's in my config, I own it.
+        config = self.load_config()
+        return project_name in config.get("projects", {})
 
     def create_session(self, username):
         """Create a new session ID and file for the user."""
-        return self.session.create_session(username, self.auth)
+        # Retrieve projects from user config
+        projects = list(self.get_user_projects_from_config().keys())
+        return self.session.create_session(username, self.auth, projects=projects)
 
     def get_session(self, session_id):
         """Retrieve session data."""
         return self.session.get_session(session_id)
+
+    def verify_session(self, session_id):
+        """Verify if a session ID is valid."""
+        if not session_id:
+            return False, "Session ID missing."
+        
+        if not self.session.check_session_id(session_id):
+            return False, "Session ID does not match server config."
+            
+        session_data = self.session.get_session(session_id)
+        if not session_data:
+            return False, "Session expired or invalid."
+            
+        return True, "Valid Session"
 
     def log_command(self, session_id, command, output):
         """Log a command and its output to the session file."""
@@ -44,7 +102,19 @@ class EncServer:
 
     def logout_session(self, session_id):
         """Destroy a session."""
+        # Unmount all projects
+        self.unmount_all(session_id)
         return self.session.logout_session(session_id)
+
+    def unmount_all(self, session_id):
+        """Unmount all active projects in the session."""
+        session_data = self.session.get_session(session_id)
+        if not session_data:
+            return
+            
+        active_projects = session_data.get("active_projects", [])
+        for project_name in list(active_projects):
+            self.project_unmount(project_name, session_id)
 
     def project_init(self, project_name, password, session_id, project_dir):
         """Initialize encrypted project vault and manage session/access."""
@@ -65,7 +135,6 @@ class EncServer:
         success = handler.init_project(project_name, password)
 
         if success:
-            self.session.start_session_monitoring()
 
             # Construct paths (matching GocryptfsHandler defaults)
             vault_path = f"/home/{username}/.enc/vault/master/{project_name}"
@@ -77,20 +146,23 @@ class EncServer:
                 "exec": None
             }
 
-            # Add project to user's list with metadata
-            self.auth.add_user_project(username, project_name, metadata=metadata)
+            # Add project to USER CONFIG instead of policy
+            self.add_project_to_config(project_name, metadata)
+            
+            if session_id:
+                self.session.update_project_info(session_id, project_name, mount_state=True)
             return True, {"status": "success", "project": project_name, "mount_point": mount_point}
         else:
             return False, {"status": "error", "message": "Failed to init project"}
 
     def project_list(self, session_id):
-        """Get the list of projects and their metadata for the current user."""
+        """Get the merged list of projects (Server + Local Session)."""
         session_data = self.session.get_session(session_id)
         if not session_id or not session_data or not self.session.check_session_id(session_id):
             return False, {"status": "error", "message": "Invalid or expired session"}
             
-        username = session_data.get("username")
-        raw_projects = self.auth.get_user_project_metadata(username)
+        # Get from USER CONFIG
+        raw_projects = self.get_user_projects_from_config()
         
         # Filter out sensitive vault_path from the response
         filtered_projects = {}
@@ -101,6 +173,163 @@ class EncServer:
             }
         
         return True, {"status": "success", "projects": filtered_projects}
+
+    def remove_project(self, project_name, session_id=None):
+        """Permanently remove a project and its vault."""
+        import getpass
+        import shutil
+        user = getpass.getuser()
+        
+        # 1. Access Check (Local Config)
+        if not self.has_project_access(project_name):
+             return False, {"status": "error", "message": "Access Denied: You do not have access to this project."}
+
+        # 2. Unmount First (Safety)
+        # Attempt unmount, but ignore errors if not mounted
+        self.project_unmount(project_name, session_id)
+        
+        from enc_server.gocryptfs_handler import GocryptfsHandler
+        handler = GocryptfsHandler()
+        
+        # 3. Path Calculation (Should match init logic)
+        vault_path = handler.vault_root / project_name
+        
+        # 4. Secure Deletion
+        try:
+            if vault_path.exists():
+                shutil.rmtree(vault_path)
+            else:
+                # If vault doesn't exist, we still proceed to clean up metadata
+                # but might want to warn
+                pass 
+        except Exception as e:
+            return False, {"status": "error", "message": f"Failed to delete vault: {e}"}
+
+        # 5. Metadata Cleanup (User Config)
+        self.remove_project_from_config(project_name)
+        
+        # 6. Session Cleanup
+        if session_id:
+            self.session.update_project_info(session_id, project_name, mount_state=False) 
+            # Force remove from active projects if present (handled by unmount, but ensuring)
+            
+            self.session.log_command(session_id, f"server-project-remove {project_name}", {"status": "success"})
+
+        return True, {"status": "success", "message": f"Project '{project_name}' removed."}
+
+    def project_mount(self, project_name, password, session_id=None):
+        """Mount an encrypted project."""
+        import getpass
+        user = getpass.getuser()
+        
+        # Access Check (Local Config)
+        if not self.has_project_access(project_name):
+            return False, {"status": "error", "message": "Access Denied: You do not have access to this project."}
+
+        from enc_server.gocryptfs_handler import GocryptfsHandler
+        handler = GocryptfsHandler()
+        success = handler.mount_project(project_name, password)
+        
+        res = {}
+        if success:
+            res = {"status": "success", "mount_point": f"/home/{user}/.enc/run/master/{project_name}"}
+            if session_id:
+                self.session.update_project_info(session_id, project_name, mount_state=True)
+        else:
+            res = {"status": "error", "message": "Failed to mount project"}
+            
+        if session_id:
+            self.session.log_command(session_id, f"server-project-mount {project_name}", res)
+            
+        return success, res
+
+    def project_unmount(self, project_name, session_id=None):
+        """Unmount an encrypted project."""
+        import getpass
+        user = getpass.getuser()
+        
+        # Access Check (Local Config)
+        if not self.has_project_access(project_name):
+            return False, {"status": "error", "message": "Access Denied: You do not have access to this project."}
+
+        from enc_server.gocryptfs_handler import GocryptfsHandler
+        handler = GocryptfsHandler()
+        handler.unmount_project(project_name)
+        res = {"status": "success"}
+        
+        if session_id:
+            self.session.update_project_info(session_id, project_name, mount_state=False)
+            self.session.log_command(session_id, f"server-project-unmount {project_name}", res)
+            
+        return True, res
+
+    def project_run(self, project_name, cmd_str, session_id=None):
+        """Run a command in the project's run directory."""
+        import getpass
+        user = getpass.getuser()
+        
+        # Access Check (Local Config)
+        if not self.has_project_access(project_name):
+            return False, json.dumps({"status": "error", "message": "Access Denied"})
+
+        work_dir = os.path.expanduser(f"~/.enc/run/master/{project_name}")
+        try:
+            # Run and capture for logging
+            proc = subprocess.run(cmd_str, shell=True, cwd=work_dir, capture_output=True, text=True)
+            output = f"RET: {proc.returncode}\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}"
+            if session_id:
+                self.session.log_command(session_id, f"server-project-run {project_name}", output)
+            return True, output
+        except Exception as e:
+            if session_id:
+                self.session.log_command(session_id, f"server-project-run {project_name}", str(e))
+            return False, str(e)
+
+    def get_user_projects(self, username):
+        """Return list of projects for a user."""
+        # For listing ALL projects (admin view?), this requires access to other user's config.
+        # This function was used by `server-user-list` maybe? 
+        # Wait, get_all_users calls this via auth permissions? No.
+        
+        # Current implementation of `get_all_users` in this file doesn't call this.
+        # It calls `self.auth.get_all_users()`.
+        
+        # But `cli.py` might call `get_user_projects`.
+        # Since we moved storage to user config, we can only easily get CURRENT user projects.
+        # Reading another user's config requires sudo or they aren't accessible.
+        
+        # For now, let's just return empty list or Implement reading /home/{username}/.enc/config.json with sudo if needed.
+        # But this method is usually called for the CURRENT user in `project_list` context.
+        # In `EncServer`, `project_list` calls `self.auth.get_user_project_metadata` which we removed.
+        # So we don't need this unless external callers use it.
+        # Let's keep it but point to config if username matches current user.
+        
+        import getpass
+        if username == getpass.getuser():
+             return list(self.get_user_projects_from_config().keys())
+        
+        return [] # TODO: Admin access to other users' projects
+
+    def get_all_users(self, session_id=None):
+        """Return all users for listing."""
+        users = self.auth.get_all_users()
+        users_data = []
+        for u, record in users.items():
+            role = "user"
+            perms = []
+            if isinstance(record, dict):
+                role = record.get("role", "user")
+                perms = record.get("permissions", [])
+            elif isinstance(record, list):
+                role = "legacy"
+                perms = record
+            users_data.append({"username": u, "role": role, "permissions": perms})
+            
+        res = {"status": "success", "users": users_data}
+        if session_id:
+            self.session.log_command(session_id, "user list", res)
+            
+        return res
 
     def create_user(self, username, password, role="user", ssh_key=None):
         """Create a system user and update policy."""
@@ -120,7 +349,7 @@ class EncServer:
                 console.print(f"[yellow]User {username} already exists.[/yellow]")
                 return False
             except subprocess.CalledProcessError:
-                subprocess.run(["sudo", "adduser", "-D", "-s", "/usr/local/bin/enc-shell", username], check=True)
+                subprocess.run(["sudo", "adduser", "-D", "-s", "/usr/local/bin/enc-shell", "-G", "enc", username], check=True)
                 # Set password
                 subprocess.run(f"echo '{username}:{password}' | sudo chpasswd", shell=True, check=True)
                 console.print(f"[green]System user {username} created.[/green]")
@@ -141,7 +370,8 @@ class EncServer:
                         subprocess.run(cmd, shell=True, check=True)
                         
                         subprocess.run(["sudo", "chmod", "600", auth_keys], check=True)
-                        subprocess.run(["sudo", "chown", "-R", f"{username}:{username}", ssh_dir], check=True)
+                        # Fix ownership (use username: to default to user's primary group)
+                        subprocess.run(["sudo", "chown", "-R", f"{username}:", ssh_dir], check=True)
                         console.print(f"[green]SSH key configured for {username}.[/green]")
                     except Exception as e:
                         console.print(f"[red]Failed to configure SSH key: {e}[/red]")

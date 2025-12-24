@@ -54,7 +54,9 @@ class SshfsHandler:
 
         ssh_key = self.config.get("ssh_key")
         if ssh_key:
-            cmd.extend(["-o", f"IdentityFile={ssh_key}"])
+            key_path = os.path.expanduser(ssh_key)
+            cmd.extend(["-o", f"IdentityFile={key_path}"])
+            cmd.extend(["-o", "PreferredAuthentications=publickey"])
 
         try:
             # Check if sshfs is installed

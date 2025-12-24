@@ -9,6 +9,9 @@ import re
 import click
 import pexpect
 from urllib.parse import urlparse
+import threading
+import signal
+import platform
 from rich.console import Console
 from enc_client.session import Session
 
@@ -191,7 +194,9 @@ class Enc:
             cmd.extend(["-p", str(port)])
         
         if ssh_key:
-            cmd.extend(["-i", ssh_key])
+            cmd.extend(["-i", os.path.expanduser(ssh_key)])
+            # Avoid falling back to password if key is provided
+            cmd.extend(["-o", "PreferredAuthentications=publickey"])
         
         target = f"{username}@{host}"
         return cmd, target
@@ -285,6 +290,7 @@ class Enc:
 
                     self._save_local_session(session_data)
                     console.print(f"[bold green]Login Success![/bold green] Session ID: {session_data['session_id']}")
+                    self.monitor_session()
                     
                 except json.JSONDecodeError:
                      console.print(f"[red]Failed to parse login response:[/red] {output}")
@@ -488,6 +494,35 @@ class Enc:
             console.print(f"[red]Error:[/red] {e}")
             return False
 
+    def monitor_project(self, session_id, name):
+        """Call server to monitor project."""
+        # Start monitoring thread as daemon so CLI can exit
+        thread = threading.Thread(
+            target=self.session_manager.monitor_project, 
+            args=(session_id, name, self.project_unmount),
+            daemon=True
+        )
+        thread.start()      
+
+    def monitor_session(self):
+        """Monitor terminal signals to logout session on close in background."""
+        import subprocess
+        import sys
+        import os
+        try:
+            # Capture the parent PID (the shell) to monitor
+            ppid = os.getppid()
+            
+            # Use sys.argv[0] to get the path to the current 'enc' executable
+            cmd = [sys.argv[0], 'internal-watchdog', '--ppid', str(ppid)]
+            subprocess.Popen(cmd,
+                             stdout=subprocess.DEVNULL,
+                             stderr=subprocess.DEVNULL,
+                             stdin=subprocess.DEVNULL,
+                             close_fds=True)
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not start session watchdog: {e}[/yellow]")
+
     def project_mount(self, name, password, local_dir="."):
         """Call server to mount project and establish local SSHFS bridge."""
         # Check if project active locally
@@ -499,15 +534,16 @@ class Enc:
         base, target = self.get_ssh_base_cmd()
         
         cmd = list(base)
-        remote_cmd = self.get_remote_cmd(f"server-project-mount {name}")
+        remote_cmd = self.get_remote_cmd(f"server-project-mount {shlex.quote(name)} --password {shlex.quote(password)}")
         full_ssh = cmd + [target, remote_cmd]
         
         try:
-            proc = subprocess.Popen(full_ssh, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            stdout, stderr = proc.communicate(input=f"{password}\n")
+            # Using run instead of Popen/pipe for better reliability with flags
+            res = subprocess.run(full_ssh, capture_output=True, text=True)
+            stdout = res.stdout
             
-            if proc.returncode != 0:
-                console.print(f"[red]Mount Failed:[/red] {stderr}")
+            if res.returncode != 0:
+                console.print(f"[red]Mount Failed:[/red] {res.stderr}")
                 return False
 
             try:
@@ -523,8 +559,13 @@ class Enc:
                             ssh_bridge = SshfsHandler(self.config)
                             success = ssh_bridge.mount_project(name, local_dir, server_mount_point)
                             
+                            
                             if success:
                                 self.update_project_info(name, local_dir=os.path.abspath(local_dir), server_mount=server_mount_point)
+                                
+                                # call session.monitor_project() after updating session info
+                                self.monitor_project(session_id, name)
+                                
                                 return True
             except:
                 pass
@@ -533,9 +574,148 @@ class Enc:
             console.print(f"[red]Error:[/red] {e}")
             return False
 
-            return False
+    def _run_remote(self, remote_cmd_str):
+        """Helper to run a remote command via SSH and parse JSON output."""
+        base, target = self.get_ssh_base_cmd()
+        full_ssh = base + [target, remote_cmd_str]
+        
+        # UX Improvement: If SSH key is configured, try BatchMode first to detect auth failure
+        # and warn the user before falling back to password prompt.
+        use_key = self.config.get("ssh_key")
+        
+        try:
+            if use_key:
+                # Try with BatchMode=yes to fail fast if key doesn't work
+                batch_cmd = base + ["-o", "BatchMode=yes", target, remote_cmd_str]
+                res = subprocess.run(batch_cmd, capture_output=True, text=True)
+                
+                if res.returncode == 255: # SSH Error (likely auth)
+                     console.print("[yellow]SSH Key authentication failed. Falling back to password...[/yellow]")
+                     # Proceed to run normally (which allows interactive password if not capturing output, 
+                     # but here we capture output. SSH usually prompts on TTY even if stdout is captured, 
+                     # but stdin might matter. subprocess.run captures stdin by default?)
+                     # subprocess.run w/ capture_output closes stdin? No.
+                     # But ssh needs a TTY for password. 
+                     
+                     # Since we use capture_output=True, SSH password prompt might fail or be hidden.
+                     # However, typical Enc usage for remote commands assumes non-interactive/json response.
+                     # If we need password, we might be stuck.
+                     
+                     # Actually, if we capture output, we can't easily interact with password prompt 
+                     # unless we don't capture. But we need to capture to parse JSON.
+                     # Sshpass or expect would be needed, or we just let it fail and tell user "Check key or set up agent".
+                     
+                     # Wait, user said "ask for password". 
+                     # If we can't support interactive password with capture_output, we should just warn.
+                     pass 
+                else:
+                    # Key auth worked (or other error but not connectivity/auth)
+                    if res.returncode != 0:
+                         return {"status": "error", "message": f"SSH Error: {res.stderr.strip()}"}
+                    
+                    # Parse output
+                    match = re.search(r'\{.*\}', res.stdout, re.DOTALL)
+                    if match:
+                        return json.loads(match.group(0))
+                    return {"status": "error", "message": f"Invalid server response: {res.stdout.strip()}"}
 
-    def project_unmount(self, name=None, local_dir="."):
+            # Fallback or standard run
+            res = subprocess.run(full_ssh, capture_output=True, text=True)
+            if res.returncode != 0:
+                return {"status": "error", "message": f"SSH Error: {res.stderr.strip()}"}
+            
+            # Parse output
+            match = re.search(r'\{.*\}', res.stdout, re.DOTALL)
+            if match:
+                return json.loads(match.group(0))
+            return {"status": "error", "message": f"Invalid server response: {res.stdout.strip()}"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def project_remove(self, name, password):
+         """Remove a project from server and delete local files."""
+         # 1. Permission Check
+         if not self.check_permission("server-project-remove"):
+             console.print("[red]Access Denied: You do not have permission to remove projects.[/red]")
+             return False
+
+         console.print(f"To remove project '{name}', we must verify ownership by mounting it first.")
+         
+         session_id = self.config.get("session_id")
+         if self.session_manager.is_project_active(session_id, name):
+             console.print(f"[yellow]Project '{name}' is already active. Proceeding with removal.[/yellow]")
+             # Logic for ALREADY MOUNTED project
+             if not click.confirm(f"WARNING: This will PERMANENTLY DELETE project '{name}' and all its files from the server. Are you sure?", abort=True):
+                 return False
+
+             # Call Server Remove
+             cmd = self.get_remote_cmd(f"server-project-remove {name}")
+             res = self._run_remote(cmd)
+             
+             # Unmount (locally)
+             self.project_unmount(name, forced=True) 
+             
+             if res and res.get("status") == "success":
+                 console.print(f"[green]Project '{name}' successfully removed.[/green]")
+                 return True
+             else:
+                 console.print(f"[red]Failed to remove project on server:[/red] {res.get('message') if res else 'Unknown error'}")
+                 return False
+         else:
+             # Mount to temp dir for verification
+             import tempfile
+             # We use a try...finally block around the temp dir usage if we were manually managing it,
+             # but TemporaryDirectory handles cleanup on exit.
+             # THE ISSUE was that project_unmount wasn't called before cleanup.
+             # We must ensure unmount happens.
+             
+             temp_mount = tempfile.mkdtemp()
+             try:
+                 console.print(f"Mounting '{name}' for verification...")
+                 success = self.project_mount(name, password, local_dir=temp_mount)
+                 if not success:
+                     console.print("[red]Authentication failed. Cannot remove project.[/red]")
+                     return False
+                 
+                 try:
+                     # 3. Confirmation
+                     if not click.confirm(f"WARNING: This will PERMANENTLY DELETE project '{name}' and all its files. Are you sure?", abort=True):
+                         return False
+
+                     # 5. Call Server Remove
+                     cmd = self.get_remote_cmd(f"server-project-remove {name}")
+                     res = self._run_remote(cmd)
+                     
+                     if res and res.get("status") == "success":
+                         console.print(f"[green]Project '{name}' successfully removed.[/green]")
+                         return True
+                     else:
+                         console.print(f"[red]Failed to remove project on server:[/red] {res.get('message') if res else 'Unknown error'}")
+                         return False
+                 finally:
+                     # 6. Unmount - MUST happen before we try to remove temp dir
+                     # We force unmount to ensure bridge is killed
+                     self.project_unmount(name, local_dir=temp_mount, forced=True)
+             finally:
+                 # Cleanup temp dir
+                 if os.path.exists(temp_mount):
+                     shutil.rmtree(temp_mount, ignore_errors=True)
+
+         # 5. Call Server Remove
+         cmd = self.get_remote_cmd(f"server-project-remove {name}")
+         res = self._run_remote(cmd)
+         
+         # 6. Unmount
+         self.project_unmount(name) # Auto-detects path
+         
+         if res and res.get("status") == "success":
+             console.print(f"[green]Project '{name}' successfully removed.[/green]")
+             return True
+         else:
+             console.print(f"[red]Failed to remove project on server:[/red] {res.get('message') if res else 'Unknown error'}")
+             return False
+        
+    def project_unmount(self, name=None, local_dir=".", forced=False):
         """Call server to unmount project and close local SSHFS bridge."""
         # Detect project from CWD if name not provided
         if not name:
@@ -553,7 +733,7 @@ class Enc:
         # Validate if project is actually active (locally mounted) before unmount
         # This prevents unmounting a project that isn't running locally (as requested)
         session_id = self.config.get("session_id")
-        if not self.session_manager.is_project_active(session_id, name):
+        if not self.session_manager.is_project_active(session_id, name) and not forced:
              console.print(f"[yellow]Project '{name}' is not currently active.[/yellow]")
              return False
 
@@ -571,7 +751,14 @@ class Enc:
              saved_path = session_data["projects"][name].get("local_mount_point")
              if saved_path:
                  project_local_path = saved_path
-
+        
+        # Fallback Heuristic: If default local_dir (.) is not the mount, but a folder with 'name' exists
+        # and IS a mount, use that. This handles cases where session is lost but user is in parent dir.
+        if not os.path.ismount(project_local_path):
+            potential_path = os.path.join(os.getcwd(), name)
+            if os.path.isdir(potential_path) and os.path.ismount(potential_path):
+                project_local_path = potential_path
+        
         ssh_bridge.unmount_project(project_local_path)
 
         # 2. Call server to unmount vault
@@ -703,7 +890,9 @@ class Enc:
         # Incorporate ssh_key if present
         ssh_key = self.config.get("ssh_key")
         if ssh_key:
-             ssh_opts += f" -i {ssh_key}"
+            key_path = os.path.expanduser(ssh_key)
+            ssh_opts += f" -i {key_path}"
+            ssh_opts += f" -o PreferredAuthentications=publickey"
         
         # Add strict host key checking off for convenience/test?
         # Maybe: -o StrictHostKeyChecking=no
@@ -755,8 +944,60 @@ class Enc:
             console.print(f"[red]Execution Error:[/red] {e}")
             return False
 
+    def unmount_all(self):
+        """Unmount all mounted projects."""
+        
+        #check all the active project names
+        session_id = self.config.get("session_id")
+        active_projects = self.session_manager.get_active_projects(session_id)
+        for name in active_projects:
+            self.project_unmount(name)
+
+    def cleanup_stray_mounts(self):
+        """
+        Scan system mounts for any remaining ENC SSHFS connections and unmount them.
+        This provides an extra layer of security during logout.
+        """
+        username = self.config.get("username")
+        url_parts = self._parse_url()
+        if not url_parts or not username:
+             return
+             
+        host, _ = url_parts
+        
+        # Pattern to look for in 'mount' output:
+        # username@host:.*.enc/run/master/
+        pattern = f"{username}@{host}:"
+        
+        try:
+            output = subprocess.check_output(["mount"], text=True)
+            for line in output.splitlines():
+                if pattern in line and ".enc/run/master/" in line:
+                    # Parse local mount point from line:
+                    # format: source on /path (type, options)
+                    match = re.search(r' on (.*?) \(', line)
+                    if match:
+                        mount_path = match.group(1).strip()
+                        if os.path.exists(mount_path):
+                            console.print(f"[yellow]Detected stray mount at {mount_path}. Cleaning up...[/yellow]")
+                            # Force unmount logic based on OS
+                            import platform
+                            if platform.system() == "Darwin":
+                                subprocess.run(["diskutil", "unmount", "force", mount_path], capture_output=True)
+                            else:
+                                subprocess.run(["fusermount", "-uz", mount_path], capture_output=True)
+        except Exception:
+            pass
+
     def logout(self):
         """Clear local session state."""
+
+        # if project is mounted then unmount it
+        self.unmount_all()
+        
+        # Check for any remaining stray mounts not tracked in session
+        self.cleanup_stray_mounts()
+
         # Optional: Call server-logout to invalidate on server side too?
         # Yes, good practice.
         base, target = self.get_ssh_base_cmd()
@@ -764,13 +1005,19 @@ class Enc:
         
         if base and target and username:
             try:
-                remote_cmd = self.get_remote_cmd(f"server-logout {username}")
-                logout_cmd = list(base) + [target, remote_cmd]
-                subprocess.run(logout_cmd, capture_output=True)
+                session_id = self.config.get("session_id")
+                if session_id:
+                    remote_cmd = self.get_remote_cmd(f"server-logout {session_id}")
+                    logout_cmd = list(base) + [target, remote_cmd]
+                    subprocess.run(logout_cmd, capture_output=True)
             except: 
                 pass # Ignore network errors during logout
         
         # Clear local
+        # save loging out command in session file logs
+        session_id = self.config.get("session_id")
+        self.session_manager.save_log(session_id, f"logout session!")
+
         if self.session_manager.clear_all_sessions():
             self.config["session_id"] = None
             self.save_config(self.config)

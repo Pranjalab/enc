@@ -8,7 +8,7 @@ if [ ! -e /dev/fuse ]; then
 fi
 
 # Ensure correct permissions for admin home (in case of volume mounts)
-chown -R admin:admin /home/admin
+chown -R admin /home/admin
 
 # Unlock admin account (Alpine locks passwordless accounts by default)
 passwd -u admin || true

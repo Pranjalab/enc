@@ -28,10 +28,13 @@ class Session:
         with open(self.config_file, "w") as f:
             json.dump(config, f, indent=2)
 
-    def create_session(self, username, auth_instance):
+    def create_session(self, username, auth_instance, projects=None):
         """Create a new session ID and file for the user."""
         session_id = str(uuid.uuid4())
         timestamp = datetime.datetime.now().isoformat()
+        
+        if projects is None:
+            projects = []
         
         session_data = {
             "session_id": session_id,
@@ -40,7 +43,7 @@ class Session:
             "context": "enc",
             "active_project": None,
             "allowed_commands": auth_instance.get_user_permissions(username),
-            "projects": auth_instance.get_user_projects(username),
+            "projects": projects,
             "logs": {}
         }
 
@@ -69,6 +72,32 @@ class Session:
         with open(session_file, 'r') as f:
             return json.load(f)
 
+    def save_session(self, session_data):
+        """Save session data to file."""
+        session_id = session_data.get("session_id")
+        session_file = self.session_dir / f"{session_id}.json"
+        with open(session_file, 'w') as f:
+            json.dump(session_data, f, indent=4)
+        return True
+
+    def update_project_info(self, session_id, project_name, mount_state=True):
+        """Update project activity status in the session file."""
+        session_data = self.get_session(session_id)
+        if not session_data:
+            return False
+            
+        if "active_projects" not in session_data:
+            session_data["active_projects"] = []
+            
+        if mount_state:
+            if project_name not in session_data["active_projects"]:
+                session_data["active_projects"].append(project_name)
+        else:
+            if project_name in session_data["active_projects"]:
+                session_data["active_projects"].remove(project_name)
+                
+        return self.save_session(session_data)
+
     def log_command(self, session_id, command, output):
         """Log a command and its output to the session file."""
         session_data = self.get_session(session_id)
@@ -78,14 +107,15 @@ class Session:
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log_key = f"[{timestamp}] {command}"
         session_data["logs"][log_key] = output
-        
-        session_file = self.session_dir / f"{session_id}.json"
-        with open(session_file, 'w') as f:
-            json.dump(session_data, f, indent=4)
-        return True
+        return self.save_session(session_data)
 
     def logout_session(self, session_id):
         """Destroy a session."""
+        # remove session id from config file
+        config = self.load_config()
+        if config.get("session_id") == session_id:
+            config["session_id"] = None
+            self.save_config(config)
         session_file = self.session_dir / f"{session_id}.json"
         if session_file.exists():
             os.remove(session_file)
