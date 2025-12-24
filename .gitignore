@@ -70,3 +70,4 @@ server/ssh/
 users.db
 *.sqlite
 *.db
+tests/test_project/ssh_key
