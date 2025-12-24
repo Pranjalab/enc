@@ -1,5 +1,12 @@
+/* Custom Theme Overrides */
+.wy-nav-content {
+    max-width: 80% !important;
+    /* Increase width */
+}
+
 /* Override the main theme color */
-.wy-nav-top, .wy-side-nav-search {
+.wy-nav-top,
+.wy-side-nav-search {
     background-color: #0d2d6a !important;
 }
 
@@ -12,7 +19,8 @@
     border-right: solid 1px #0d2d6a !important;
 }
 
-.wy-menu-vertical li.on a, .wy-menu-vertical li.current > a {
+.wy-menu-vertical li.on a,
+.wy-menu-vertical li.current>a {
     color: #404040;
     padding: 0.4045em 1.618em;
     font-weight: bold;

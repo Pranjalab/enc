@@ -37,6 +37,14 @@ html_css_files = [
     'custom.css',
 ]
 
+html_context = {
+    "display_github": True,
+    "github_user": "Pranjalab",
+    "github_repo": "enc",
+    "github_version": "main",
+    "conf_py_path": "/docs/",
+}
+
 html_theme_options = {
     'logo_only': False,
     'prev_next_buttons_location': 'bottom',

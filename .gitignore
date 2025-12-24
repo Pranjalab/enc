@@ -71,3 +71,4 @@ users.db
 *.sqlite
 *.db
 tests/test_project/ssh_key
+docs/_build/

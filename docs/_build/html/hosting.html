@@ -9,7 +9,7 @@
   <title>Hosting the Documentation &mdash; ENC 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
-      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=469a20a4" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=d074459a" />
 
   
     <link rel="shortcut icon" href="_static/enc_icon.png"/>
@@ -100,7 +100,10 @@
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Hosting the Documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#building-locally">Building Locally</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#deploying-to-github-pages">Deploying to GitHub Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#deploying-to-github-pages">Deploying to GitHub Pages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-steps">Configuration Steps</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="contact.html">Contact</a><ul>
@@ -126,7 +129,7 @@
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
       <li class="breadcrumb-item active">Hosting the Documentation</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/hosting.rst.txt" rel="nofollow"> View page source</a>
+              <a href="https://github.com/pranjalab/enc/blob/main/docs/hosting.rst" class="fa fa-github"> Edit on GitHub</a>
       </li>
   </ul>
   <hr/>
@@ -158,27 +161,28 @@ Open <code class="docutils literal notranslate"><span class="pre">docs/_build/ht
 </section>
 <section id="deploying-to-github-pages">
 <h2>Deploying to GitHub Pages<a class="headerlink" href="#deploying-to-github-pages" title="Link to this heading"></a></h2>
-<p>You can automate deployment using GitHub Actions.</p>
-<ol class="arabic">
-<li><p>Create a workflow file <code class="docutils literal notranslate"><span class="pre">.github/workflows/docs.yml</span></code>:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Docs</span>
-<span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">push</span><span class="p p-Indicator">]</span>
-<span class="nt">jobs</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">build</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
-<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v2</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/setup-python@v2</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip install sphinx sphinx_rtd_theme</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cd docs &amp;&amp; make html</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">peaceiris/actions-gh-pages@v3</span>
-<span class="w">      </span><span class="nt">with</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">github_token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.GITHUB_TOKEN }}</span>
-<span class="w">        </span><span class="nt">publish_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./docs/_build/html</span>
-</pre></div>
-</div>
-</li>
+<p>We have configured an automated GitHub Actions workflow to publish these docs.</p>
+<ol class="arabic simple">
+<li><p><strong>Workflow File</strong>: Included at <code class="docutils literal notranslate"><span class="pre">.github/workflows/deploy-docs.yml</span></code>.</p></li>
+<li><p><strong>Trigger</strong>: Pushes to the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch.</p></li>
 </ol>
+<section id="configuration-steps">
+<h3>Configuration Steps<a class="headerlink" href="#configuration-steps" title="Link to this heading"></a></h3>
+<p>To enable this on your fork:</p>
+<ol class="arabic simple">
+<li><p>Go to your repository <strong>Settings</strong> &gt; <strong>Pages</strong>.</p></li>
+<li><p>Under <strong>Build and deployment</strong> &gt; <strong>Source</strong>, keep it as “Deploy from a branch”.</p></li>
+<li><p><strong>Important</strong>: The workflow pushes to a branch named <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code>.
+*   Wait for the first Action run to complete (it will create the branch).
+*   Then, in Settings &gt; Pages, select <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> as the <strong>Branch</strong> and <code class="docutils literal notranslate"><span class="pre">/</span> <span class="pre">(root)</span></code> as the folder.
+*   Click <strong>Save</strong>.</p></li>
+</ol>
+<p>Your docs will be live at <code class="docutils literal notranslate"><span class="pre">https://&lt;username&gt;.github.io/enc/</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>GitHub Pages and GitHub Actions are <strong>free</strong> for public repositories. No payment or billing setup is required.</p>
+</div>
+</section>
 </section>
 </section>
 
