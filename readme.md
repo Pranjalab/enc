@@ -3,7 +3,7 @@
   <h1>ENC: The Encrypted Coding Environment</h1>
   
   [![Documentation Status](https://img.shields.io/badge/docs-live-brightgreen)](https://pranjalab.github.io/enc/)
-  [![GitHub Release](https://img.shields.io/github/v/release/Pranjalab/enc)](https://github.com/Pranjalab/enc/releases)
+  [![GitHub Release](https://img.shields.io/github/v/tag/Pranjalab/enc?label=version)](https://github.com/Pranjalab/enc/tags)
 </div>
 
 ![ENC Poster](docs/_static/enc_poster.png)
