@@ -118,7 +118,13 @@ For more detailed instructions, check the component-specific documentation:
 
 ### 🌐 Full Documentation
 
-We also provide a complete, searchable documentation site built with Sphinx.
+We provide a complete, searchable documentation site built with Sphinx.
+**[View Live Documentation](https://pranjalab.github.io/enc/)**
+
+#### Quick Links
+*   **[🚀 Quick Start](https://pranjalab.github.io/enc/quick_start.html)**: Get up and running in minutes.
+*   **[✨ Features & Roadmap](https://pranjalab.github.io/enc/features.html)**: Learn about our security model and upcoming VS Code integration.
+*   **[🤝 Collaboration](https://pranjalab.github.io/enc/collaboration.html)**: Read our origin story and how to contribute.
 
 **Build and Host Locally:**
 
