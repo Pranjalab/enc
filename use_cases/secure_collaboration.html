@@ -1,0 +1,306 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Secure Collaboration with Interns or Contributors &mdash; ENC 0.1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=d074459a" />
+
+  
+    <link rel="shortcut icon" href="../_static/enc_icon.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=360bc84d"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Client-Side Secure Deployment with RAM-Only Execution" href="client_side_secure_deployment.html" />
+    <link rel="prev" title="Host Your Own ENC Server and Access It from Anywhere" href="host_your_own_server.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ENC
+              <img src="../_static/enc_icon.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../intro.html#components">Components</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../quick_start.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../quick_start.html#deploy-the-server">1. Deploy the Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick_start.html#install-the-client">2. Install the Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick_start.html#initialize-your-first-project">3. Initialize Your First Project</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../installation_cli.html">ENC CLI Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../installation_cli.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation_cli.html#installation-steps">Installation Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation_cli.html#configuration">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../setup_server.html">Server Setup Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../setup_server.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../setup_server.html#deployment">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../setup_server.html#configuration">Configuration</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About &amp; Features</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../features.html">Features &amp; Roadmap</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../features.html#core-features">Core Features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../features.html#encryption-at-rest">🔒 Encryption at Rest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../features.html#secure-runtime-in-memory-decryption">⚡ Secure Runtime (In-Memory Decryption)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../features.html#ssh-tunneling">🛡️ SSH Tunneling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../features.html#roadmap">Roadmap</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../features.html#github-auto-sync-coming-soon">🔄 GitHub Auto-Sync (Coming Soon)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../features.html#vs-code-extension-coming-soon">💻 VS Code Extension (Coming Soon)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../features.html#hosted-enc-server">🚀 Hosted ENC Server</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../collaboration.html">Collaboration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../collaboration.html#our-story">Our Story</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../collaboration.html#how-to-contribute">How to Contribute</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../collaboration.html#ways-to-help">Ways to Help</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../collaboration.html#submitting-a-pull-request">Submitting a Pull Request</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../collaboration.html#contact">Contact</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Use Cases</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="host_your_own_server.html">Host Your Own ENC Server and Access It from Anywhere</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="host_your_own_server.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="host_your_own_server.html#prerequisite">Prerequisite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="host_your_own_server.html#hosting-the-enc-server">1. Hosting the ENC Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="host_your_own_server.html#client-setup">2. Client Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="host_your_own_server.html#workflow">3. Workflow</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="host_your_own_server.html#step-a-create-admin-user">Step A: Create Admin User</a></li>
+<li class="toctree-l3"><a class="reference internal" href="host_your_own_server.html#step-b-configure-client-access">Step B: Configure Client Access</a></li>
+<li class="toctree-l3"><a class="reference internal" href="host_your_own_server.html#step-c-initialize-a-project">Step C: Initialize a Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="host_your_own_server.html#step-d-access-from-anywhere">Step D: Access from Anywhere</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Secure Collaboration with Interns or Contributors</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-problem">The Problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-enc-solution">The ENC Solution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#workflow">Workflow</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#admin-setup">1. Admin Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#contributor-key-setup">2. Contributor Key Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#access-control">3. Access Control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#revocation">4. Revocation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="client_side_secure_deployment.html">Client-Side Secure Deployment with RAM-Only Execution</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="client_side_secure_deployment.html#problem">Problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="client_side_secure_deployment.html#workflow-planned">Workflow (Planned)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="client_side_secure_deployment.html#initialization">1. Initialization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="client_side_secure_deployment.html#secure-mount">2. Secure Mount</a></li>
+<li class="toctree-l3"><a class="reference internal" href="client_side_secure_deployment.html#execution">3. Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="client_side_secure_deployment.html#protection-model">4. Protection Model</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="git_sync.html">Git Synchronization with ENC Projects</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="git_sync.html#concept">Concept</a></li>
+<li class="toctree-l2"><a class="reference internal" href="git_sync.html#workflow-planned">Workflow (Planned)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="git_sync.html#configuration">1. Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="git_sync.html#auto-sync-on-unmount">2. Auto-Sync on Unmount</a></li>
+<li class="toctree-l3"><a class="reference internal" href="git_sync.html#encrypted-vs-decrypted-push">3. Encrypted vs Decrypted Push</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Management</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../user_management.html">User Management</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../user_management.html#system-admin-vs-enc-users">System Admin vs. ENC Users</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_management.html#creating-a-new-user">Creating a New User</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../user_management.html#managing-permissions">Managing Permissions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../project_management.html">Project Management</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../project_management.html#creating-a-project">Creating a Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../project_management.html#mounting-a-project">Mounting a Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../project_management.html#listing-projects">Listing Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../project_management.html#unmounting">Unmounting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../ssh_keys.html">Managing SSH Keys</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../ssh_keys.html#generating-an-ssh-key">Generating an SSH Key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ssh_keys.html#adding-keys-to-enc">Adding Keys to ENC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../ssh_keys.html#option-1-using-ssh-agent-recommended">Option 1: Using SSH Agent (Recommended)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ssh_keys.html#option-2-configuring-enc">Option 2: Configuring ENC</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../ssh_keys.html#authorizing-keys-on-server">Authorizing Keys on Server</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../security.html">Security</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../security.html#architecture-overview">Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../security.html#why-ssh-keys">Why SSH Keys?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../security.html#session-security">Session Security</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../hosting.html">Hosting the Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../hosting.html#building-locally">Building Locally</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../hosting.html#deploying-to-github-pages">Deploying to GitHub Pages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../hosting.html#configuration-steps">Configuration Steps</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../contact.html#support">Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../contact.html#core-team">Core Team</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ENC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Secure Collaboration with Interns or Contributors</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/Pranjalab/enc/blob/main/docs/use_cases/secure_collaboration.md" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="secure-collaboration-with-interns-or-contributors">
+<h1>Secure Collaboration with Interns or Contributors<a class="headerlink" href="#secure-collaboration-with-interns-or-contributors" title="Link to this heading"></a></h1>
+<p>Provide limited, secure access to your intellectual property without risking data theft.</p>
+<section id="the-problem">
+<h2>The Problem<a class="headerlink" href="#the-problem" title="Link to this heading"></a></h2>
+<p>When you hire interns or contractors, you often have to give them access to your codebase. If they copy the code to a USB drive or upload it to their personal cloud, your IP is compromised.</p>
+</section>
+<section id="the-enc-solution">
+<h2>The ENC Solution<a class="headerlink" href="#the-enc-solution" title="Link to this heading"></a></h2>
+<p>With ENC, contributors work in a “Zero-Trust” environment.</p>
+<ol class="arabic simple">
+<li><p>The code resides on your encrypted server.</p></li>
+<li><p>It is decrypted seamlessly on their machine <strong>only in memory</strong> (RAM).</p></li>
+<li><p>Once they unmount (or if you revoke access), the decrypted text vanishes. The files on their disk are useless encryption blobs.</p></li>
+</ol>
+</section>
+<section id="workflow">
+<h2>Workflow<a class="headerlink" href="#workflow" title="Link to this heading"></a></h2>
+<section id="admin-setup">
+<h3>1. Admin Setup<a class="headerlink" href="#admin-setup" title="Link to this heading"></a></h3>
+<p>As the admin, you create a user account for your intern on your hosted ENC server.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># On the server</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>enc-server<span class="w"> </span>enc<span class="w"> </span>user<span class="w"> </span>create<span class="w"> </span>intern-alice<span class="w"> </span>--role<span class="w"> </span>user
+</pre></div>
+</div>
+</section>
+<section id="contributor-key-setup">
+<h3>2. Contributor Key Setup<a class="headerlink" href="#contributor-key-setup" title="Link to this heading"></a></h3>
+<p>Ask the intern for their public SSH key (<code class="docutils literal notranslate"><span class="pre">id_rsa.pub</span></code>). Add it to the server manually or have them send it to you securely.</p>
+<p><em>Feature Note</em>: In future versions, admins will be able to add keys via <code class="docutils literal notranslate"><span class="pre">enc</span> <span class="pre">user</span> <span class="pre">add-key</span></code>.</p>
+</section>
+<section id="access-control">
+<h3>3. Access Control<a class="headerlink" href="#access-control" title="Link to this heading"></a></h3>
+<p>You can create a project specifically for them or add them to an existing one.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a project</span>
+enc<span class="w"> </span>project<span class="w"> </span>init<span class="w"> </span>new-feature-module
+</pre></div>
+</div>
+<p><em>(Currently, ENC supports user-owned projects. Shared project collaboration is on the roadmap.)</em></p>
+</section>
+<section id="revocation">
+<h3>4. Revocation<a class="headerlink" href="#revocation" title="Link to this heading"></a></h3>
+<p>When the internship ends, you simply remove their user from the server or revoke their key.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>enc-server<span class="w"> </span>enc<span class="w"> </span>user<span class="w"> </span>remove<span class="w"> </span>intern-alice
+</pre></div>
+</div>
+<p>They instantly lose access. Any encrypted files they might have copied are mathematically impossible to open without the server’s master key and their valid session.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="host_your_own_server.html" class="btn btn-neutral float-left" title="Host Your Own ENC Server and Access It from Anywhere" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="client_side_secure_deployment.html" class="btn btn-neutral float-right" title="Client-Side Secure Deployment with RAM-Only Execution" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Pranjal Bhaskare.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

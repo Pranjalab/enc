@@ -33,9 +33,10 @@ Imagine mounting your project, making edits, and having them automatically pushe
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 A native VS Code extension to manage ENC projects directly from your editor.
 *   **Features**:
+
     *   One-click Connect/Disconnect
     *   Visual Project Explorer
-    *    Integrated Terminal for ``enc`` commands
+    *   Integrated Terminal for ``enc`` commands
 *   **Status**: Planned
 
 🚀 Hosted ENC Server

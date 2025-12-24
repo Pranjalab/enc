@@ -54,6 +54,15 @@ User Guide
 
 .. toctree::
    :maxdepth: 2
+   :caption: Use Cases
+
+   use_cases/host_your_own_server
+   use_cases/secure_collaboration
+   use_cases/client_side_secure_deployment
+   use_cases/git_sync
+
+.. toctree::
+   :maxdepth: 2
    :caption: Management
 
    user_management
