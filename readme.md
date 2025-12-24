@@ -1,4 +1,9 @@
-# ENC: The Encrypted Coding Environment
+<div align="center">
+  <img src="docs/_static/enc_icon.png" alt="ENC Logo" width="100"/>
+  <h1>ENC: The Encrypted Coding Environment</h1>
+</div>
+
+![ENC Poster](docs/_static/enc_poster.png)
 
 > **Ever wondered how secure your scripts and algorithms really are once they’re deployed on a server?**
 
@@ -11,6 +16,8 @@ To solve this problem, we’re excited to introduce the **ENC Project**—a secu
 ## 🌟 Overview
 
 ENC is designed to protect your intellectual property and sensitive logic by ensuring your code is **always encrypted at rest** and only decrypted **in memory** during active execution.
+
+![ENC Architecture](docs/_static/enc_architecture.png)
 
 The system consists of two main components:
 
@@ -106,6 +113,20 @@ For more detailed instructions, check the component-specific documentation:
 
 *   **[Server Documentation](server/README.md)**: Deployment, User Management, Architecture.
 *   **[Client Documentation](enc-cli/README.md)**: Command Reference, Configuration, SSH Keys.
+
+### 🌐 Full Documentation
+
+We also provide a complete, searchable documentation site built with Sphinx.
+
+**Build and Host Locally:**
+
+```bash
+cd docs
+pip install sphinx sphinx_rtd_theme
+make html
+# Open the docs:
+open docs/_build/html/index.html
+```
 
 ---
 

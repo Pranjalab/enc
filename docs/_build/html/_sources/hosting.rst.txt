@@ -1,0 +1,49 @@
+Hosting the Documentation
+=========================
+
+This documentation is built using **Sphinx**. You can host it on any static site provider (GitHub Pages, Netlify, Vercel) or run it locally.
+
+Building Locally
+----------------
+
+To generate the HTML files from the source:
+
+1.  **Install Requirements**:
+
+    .. code-block:: bash
+
+        pip install sphinx sphinx_rtd_theme
+
+2.  **Run Build**:
+
+    .. code-block:: bash
+
+        cd docs
+        make html
+
+3.  **View**:
+    Open ``docs/_build/html/index.html`` in your browser.
+
+Deploying to GitHub Pages
+-------------------------
+
+You can automate deployment using GitHub Actions.
+
+1.  Create a workflow file ``.github/workflows/docs.yml``:
+
+    .. code-block:: yaml
+
+        name: Docs
+        on: [push]
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+            - uses: actions/checkout@v2
+            - uses: actions/setup-python@v2
+            - run: pip install sphinx sphinx_rtd_theme
+            - run: cd docs && make html
+            - uses: peaceiris/actions-gh-pages@v3
+              with:
+                github_token: ${{ secrets.GITHUB_TOKEN }}
+                publish_dir: ./docs/_build/html
