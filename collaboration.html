@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Project Management &mdash; ENC 1.0.0 documentation</title>
+  <title>Collaboration &mdash; ENC 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/custom.css?v=d074459a" />
@@ -21,8 +21,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Managing SSH Keys" href="ssh_keys.html" />
-    <link rel="prev" title="User Management" href="user_management.html" /> 
+    <link rel="next" title="User Management" href="user_management.html" />
+    <link rel="prev" title="Features &amp; Roadmap" href="features.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -71,7 +71,7 @@
 </li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">About &amp; Features</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="features.html">Features &amp; Roadmap</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="features.html#core-features">Core Features</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="features.html#encryption-at-rest">🔒 Encryption at Rest</a></li>
@@ -87,30 +87,30 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="collaboration.html">Collaboration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="collaboration.html#our-story">Our Story</a></li>
-<li class="toctree-l2"><a class="reference internal" href="collaboration.html#how-to-contribute">How to Contribute</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="collaboration.html#ways-to-help">Ways to Help</a></li>
-<li class="toctree-l3"><a class="reference internal" href="collaboration.html#submitting-a-pull-request">Submitting a Pull Request</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Collaboration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#our-story">Our Story</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-contribute">How to Contribute</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ways-to-help">Ways to Help</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#submitting-a-pull-request">Submitting a Pull Request</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="collaboration.html#contact">Contact</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#contact">Contact</a></li>
 </ul>
 </li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Management</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="user_management.html">User Management</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="user_management.html#system-admin-vs-enc-users">System Admin vs. ENC Users</a></li>
 <li class="toctree-l2"><a class="reference internal" href="user_management.html#creating-a-new-user">Creating a New User</a></li>
 <li class="toctree-l2"><a class="reference internal" href="user_management.html#managing-permissions">Managing Permissions</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Project Management</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#creating-a-project">Creating a Project</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#mounting-a-project">Mounting a Project</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#listing-projects">Listing Projects</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#unmounting">Unmounting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="project_management.html">Project Management</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#creating-a-project">Creating a Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#mounting-a-project">Mounting a Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#listing-projects">Listing Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#unmounting">Unmounting</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ssh_keys.html">Managing SSH Keys</a><ul>
@@ -161,9 +161,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Project Management</li>
+      <li class="breadcrumb-item active">Collaboration</li>
       <li class="wy-breadcrumbs-aside">
-              <a href="https://github.com/Pranjalab/enc/blob/main/docs/project_management.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/Pranjalab/enc/blob/main/docs/collaboration.rst" class="fa fa-github"> Edit on GitHub</a>
       </li>
   </ul>
   <hr/>
@@ -171,58 +171,41 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="project-management">
-<h1>Project Management<a class="headerlink" href="#project-management" title="Link to this heading"></a></h1>
-<p>Managing encrypted projects is the core function of ENC. Each project is an isolated vault.</p>
-<section id="creating-a-project">
-<h2>Creating a Project<a class="headerlink" href="#creating-a-project" title="Link to this heading"></a></h2>
-<p>To initialize a new project vault:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span>project<span class="w"> </span>init<span class="w"> </span>&lt;project-name&gt;
-</pre></div>
-</div>
-<p>You will be prompted to create a <strong>Project Password</strong>.
-This password is used to derive the master encryption key for the vault.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p><strong>Do not lose this password.</strong> The server administrator cannot recover it for you. If lost, the data is permanently inaccessible.</p>
-</div>
+  <section id="collaboration">
+<h1>Collaboration<a class="headerlink" href="#collaboration" title="Link to this heading"></a></h1>
+<p>Join us in building the most secure coding environment for developers.</p>
+<section id="our-story">
+<h2>Our Story<a class="headerlink" href="#our-story" title="Link to this heading"></a></h2>
+<p>ENC was born out of a personal necessity. As a developer working on sensitive <strong>trading algorithms</strong> and <strong>production automation scripts</strong>, I realized that deploying code to a standard VPS or cloud server meant exposing my intellectual property to anyone with root access or physical disk access.</p>
+<p>Existing solutions were either too complex (full disk encryption requiring remote unlock) or too cumbersome (manual GPG encryption). I wanted a solution that felt like a local folder but was physically secure on the remote end.</p>
+<p>Thus, ENC (Encrypted Coding) was built—a tool to scratch my own itch, now open-sourced for the community.</p>
 </section>
-<section id="mounting-a-project">
-<h2>Mounting a Project<a class="headerlink" href="#mounting-a-project" title="Link to this heading"></a></h2>
-<p>To work on your project, you must “mount” it. This decrypts the files on-the-fly and makes them accessible in a local folder.</p>
-<ol class="arabic">
-<li><p><strong>Create a local directory</strong>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>./my-work-folder
-</pre></div>
-</div>
-</li>
-<li><p><strong>Mount the project</strong>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span>project<span class="w"> </span>mount<span class="w"> </span>&lt;project-name&gt;<span class="w"> </span>./my-work-folder
-</pre></div>
-</div>
-</li>
-<li><p><strong>Enter Password</strong>: Provide the project password when prompted.</p></li>
+<section id="how-to-contribute">
+<h2>How to Contribute<a class="headerlink" href="#how-to-contribute" title="Link to this heading"></a></h2>
+<p>We welcome contributions from security enthusiasts, Go/Python developers, and anyone passionate about privacy.</p>
+<section id="ways-to-help">
+<h3>Ways to Help<a class="headerlink" href="#ways-to-help" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Code</strong>: Pick up an issue on <a class="reference external" href="https://github.com/Pranjalab/enc">GitHub</a>. We specifically need help with the <strong>VS Code Extension</strong> and <strong>GitHub Auto-Sync</strong> features.</p></li>
+<li><p><strong>Security Audit</strong>: If you are a security researcher, we’d love your eyes on our architecture.</p></li>
+<li><p><strong>Documentation</strong>: Improve these docs or write tutorials.</p></li>
 </ol>
-<p>Once mounted, you can open <code class="docutils literal notranslate"><span class="pre">./my-work-folder</span></code> in any IDE. Files saved here are automatically encrypted and stored on the server.</p>
 </section>
-<section id="listing-projects">
-<h2>Listing Projects<a class="headerlink" href="#listing-projects" title="Link to this heading"></a></h2>
-<p>To see all projects you have access to:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span>project<span class="w"> </span>list
-</pre></div>
-</div>
-<p>This shows the project name, its server-side mount status, and where it is mounted locally (if active).</p>
+<section id="submitting-a-pull-request">
+<h3>Submitting a Pull Request<a class="headerlink" href="#submitting-a-pull-request" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Fork</strong> the repository.</p></li>
+<li><p>Create a feature branch: <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">checkout</span> <span class="pre">-b</span> <span class="pre">feature/my-new-feature</span></code></p></li>
+<li><p>Commit your changes.</p></li>
+<li><p>Push to the branch: <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span> <span class="pre">origin</span> <span class="pre">feature/my-new-feature</span></code></p></li>
+<li><p>Open a <strong>Pull Request</strong> on GitHub.</p></li>
+</ol>
 </section>
-<section id="unmounting">
-<h2>Unmounting<a class="headerlink" href="#unmounting" title="Link to this heading"></a></h2>
-<p>When finished, you should unmount the project to secure it.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span>project<span class="w"> </span>unmount<span class="w"> </span>&lt;project-name&gt;
-</pre></div>
-</div>
-<p>Or, simply <strong>Logout</strong>, which will automatically unmount all active projects:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span><span class="nb">logout</span>
-</pre></div>
-</div>
+</section>
+<section id="contact">
+<h2>Contact<a class="headerlink" href="#contact" title="Link to this heading"></a></h2>
+<p>Have an idea or want to collaborate closer?
+Reach out to <strong>Pranjal Bhaskare</strong> on GitHub (<a class="reference external" href="https://github.com/Pranjalab">&#64;Pranjalab</a>).</p>
 </section>
 </section>
 
@@ -230,8 +213,8 @@ This password is used to derive the master encryption key for the vault.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="user_management.html" class="btn btn-neutral float-left" title="User Management" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="ssh_keys.html" class="btn btn-neutral float-right" title="Managing SSH Keys" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="features.html" class="btn btn-neutral float-left" title="Features &amp; Roadmap" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="user_management.html" class="btn btn-neutral float-right" title="User Management" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

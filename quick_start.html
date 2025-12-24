@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Project Management &mdash; ENC 1.0.0 documentation</title>
+  <title>Quick Start &mdash; ENC 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/custom.css?v=d074459a" />
@@ -21,8 +21,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Managing SSH Keys" href="ssh_keys.html" />
-    <link rel="prev" title="User Management" href="user_management.html" /> 
+    <link rel="next" title="ENC CLI Installation" href="installation_cli.html" />
+    <link rel="prev" title="Introduction" href="intro.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -46,15 +46,15 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="intro.html#components">Components</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick Start</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="quick_start.html#deploy-the-server">1. Deploy the Server</a></li>
-<li class="toctree-l2"><a class="reference internal" href="quick_start.html#install-the-client">2. Install the Client</a></li>
-<li class="toctree-l2"><a class="reference internal" href="quick_start.html#initialize-your-first-project">3. Initialize Your First Project</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#deploy-the-server">1. Deploy the Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-the-client">2. Install the Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#initialize-your-first-project">3. Initialize Your First Project</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="installation_cli.html">ENC CLI Installation</a><ul>
@@ -99,18 +99,18 @@
 </li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Management</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="user_management.html">User Management</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="user_management.html#system-admin-vs-enc-users">System Admin vs. ENC Users</a></li>
 <li class="toctree-l2"><a class="reference internal" href="user_management.html#creating-a-new-user">Creating a New User</a></li>
 <li class="toctree-l2"><a class="reference internal" href="user_management.html#managing-permissions">Managing Permissions</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Project Management</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#creating-a-project">Creating a Project</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#mounting-a-project">Mounting a Project</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#listing-projects">Listing Projects</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#unmounting">Unmounting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="project_management.html">Project Management</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#creating-a-project">Creating a Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#mounting-a-project">Mounting a Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#listing-projects">Listing Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_management.html#unmounting">Unmounting</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ssh_keys.html">Managing SSH Keys</a><ul>
@@ -161,9 +161,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Project Management</li>
+      <li class="breadcrumb-item active">Quick Start</li>
       <li class="wy-breadcrumbs-aside">
-              <a href="https://github.com/Pranjalab/enc/blob/main/docs/project_management.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/Pranjalab/enc/blob/main/docs/quick_start.rst" class="fa fa-github"> Edit on GitHub</a>
       </li>
   </ul>
   <hr/>
@@ -171,58 +171,57 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="project-management">
-<h1>Project Management<a class="headerlink" href="#project-management" title="Link to this heading"></a></h1>
-<p>Managing encrypted projects is the core function of ENC. Each project is an isolated vault.</p>
-<section id="creating-a-project">
-<h2>Creating a Project<a class="headerlink" href="#creating-a-project" title="Link to this heading"></a></h2>
-<p>To initialize a new project vault:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span>project<span class="w"> </span>init<span class="w"> </span>&lt;project-name&gt;
+  <section id="quick-start">
+<h1>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h1>
+<p>Get up and running with ENC in minutes. This guide covers the fastest way to deploy the server and install the client.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Don’t want to set up a server? We are working on a <strong>Hosted ENC Server</strong> for users to experiment with zero setup. Stay tuned!</p>
+</div>
+<section id="deploy-the-server">
+<h2>1. Deploy the Server<a class="headerlink" href="#deploy-the-server" title="Link to this heading"></a></h2>
+<p>On your remote server (Ubuntu/Debian recommended):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Clone the repository</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Pranjalab/enc.git
+<span class="nb">cd</span><span class="w"> </span>enc/server
+
+<span class="c1"># Run the deployment script (Docker required)</span>
+sudo<span class="w"> </span>./deploy.sh
 </pre></div>
 </div>
-<p>You will be prompted to create a <strong>Project Password</strong>.
-This password is used to derive the master encryption key for the vault.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p><strong>Do not lose this password.</strong> The server administrator cannot recover it for you. If lost, the data is permanently inaccessible.</p>
-</div>
+<p>This will verify dependencies, build the <code class="docutils literal notranslate"><span class="pre">enc-server</span></code> Docker image, and start the service on port 2222.</p>
 </section>
-<section id="mounting-a-project">
-<h2>Mounting a Project<a class="headerlink" href="#mounting-a-project" title="Link to this heading"></a></h2>
-<p>To work on your project, you must “mount” it. This decrypts the files on-the-fly and makes them accessible in a local folder.</p>
-<ol class="arabic">
-<li><p><strong>Create a local directory</strong>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>./my-work-folder
+<section id="install-the-client">
+<h2>2. Install the Client<a class="headerlink" href="#install-the-client" title="Link to this heading"></a></h2>
+<p>On your local machine (macOS/Linux):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Clone the repository</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Pranjalab/enc.git
+<span class="nb">cd</span><span class="w"> </span>enc/enc-cli
+
+<span class="c1"># Run the installer</span>
+./install.sh
 </pre></div>
 </div>
-</li>
-<li><p><strong>Mount the project</strong>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span>project<span class="w"> </span>mount<span class="w"> </span>&lt;project-name&gt;<span class="w"> </span>./my-work-folder
-</pre></div>
-</div>
-</li>
-<li><p><strong>Enter Password</strong>: Provide the project password when prompted.</p></li>
-</ol>
-<p>Once mounted, you can open <code class="docutils literal notranslate"><span class="pre">./my-work-folder</span></code> in any IDE. Files saved here are automatically encrypted and stored on the server.</p>
+<p>This installs the <code class="docutils literal notranslate"><span class="pre">enc</span></code> command to <code class="docutils literal notranslate"><span class="pre">/usr/local/bin</span></code>.</p>
 </section>
-<section id="listing-projects">
-<h2>Listing Projects<a class="headerlink" href="#listing-projects" title="Link to this heading"></a></h2>
-<p>To see all projects you have access to:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span>project<span class="w"> </span>list
+<section id="initialize-your-first-project">
+<h2>3. Initialize Your First Project<a class="headerlink" href="#initialize-your-first-project" title="Link to this heading"></a></h2>
+<p>Now, create a user and start your first secure project:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Create your user on the server (requires admin access or first run)</span>
+<span class="c1"># (On the server)</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>enc-server<span class="w"> </span>enc<span class="w"> </span>user<span class="w"> </span>create<span class="w"> </span>&lt;your-username&gt;
+
+<span class="c1"># 2. Add your local SSH key to the server</span>
+enc<span class="w"> </span>config<span class="w"> </span>add-key<span class="w"> </span>&lt;your-private-key-path&gt;
+
+<span class="c1"># 3. Initialize a new encrypted project</span>
+enc<span class="w"> </span>project<span class="w"> </span>init<span class="w"> </span>my-secure-algo
+
+<span class="c1"># 4. Mount it locally</span>
+enc<span class="w"> </span>project<span class="w"> </span>mount<span class="w"> </span>my-secure-algo
 </pre></div>
 </div>
-<p>This shows the project name, its server-side mount status, and where it is mounted locally (if active).</p>
-</section>
-<section id="unmounting">
-<h2>Unmounting<a class="headerlink" href="#unmounting" title="Link to this heading"></a></h2>
-<p>When finished, you should unmount the project to secure it.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span>project<span class="w"> </span>unmount<span class="w"> </span>&lt;project-name&gt;
-</pre></div>
-</div>
-<p>Or, simply <strong>Logout</strong>, which will automatically unmount all active projects:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span><span class="nb">logout</span>
-</pre></div>
-</div>
+<p>Your project is now mounted at <code class="docutils literal notranslate"><span class="pre">~/enc/projects/my-secure-algo</span></code>. Any files you create there are encrypt-on-write!</p>
 </section>
 </section>
 
@@ -230,8 +229,8 @@ This password is used to derive the master encryption key for the vault.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="user_management.html" class="btn btn-neutral float-left" title="User Management" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="ssh_keys.html" class="btn btn-neutral float-right" title="Managing SSH Keys" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="intro.html" class="btn btn-neutral float-left" title="Introduction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="installation_cli.html" class="btn btn-neutral float-right" title="ENC CLI Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

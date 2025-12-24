@@ -41,8 +41,16 @@ User Guide
    :caption: Getting Started
 
    intro
+   quick_start
    installation_cli
    setup_server
+
+.. toctree::
+   :maxdepth: 2
+   :caption: About & Features
+
+   features
+   collaboration
 
 .. toctree::
    :maxdepth: 2
