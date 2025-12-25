@@ -55,7 +55,7 @@ We are constantly evolving ENC to make it the standard for secure engineering.
 ## 📚 Table of Contents
 
 - [**Installation & Setup**](#-installation--setup)
-    - [Server Setup](server/README.md)
+    - [Server Setup](enc-server/README.md)
     - [Client CLI Setup](enc-cli/README.md)
 - [**Quick Start Guide**](#-quick-start)
 - [**Documentation**](#-documentation)
@@ -68,7 +68,7 @@ We are constantly evolving ENC to make it the standard for secure engineering.
 
 ### 1. The Server
 You need an ENC Server to host your projects. You can run one on your local machine for testing or deploy it to a remote VPS.
-👉 **[Read the Server Setup Guide](server/README.md)**
+👉 **[Read the Server Setup Guide](enc-server/README.md)**
 
 ### 2. The Client
 Install the `enc` CLI to communicate with your server.
@@ -119,7 +119,7 @@ Once you have both installed:
 
 For more detailed instructions, check the component-specific documentation:
 
-*   **[Server Documentation](server/README.md)**: Deployment, User Management, Architecture.
+*   **[Server Documentation](enc-server/README.md)**: Deployment, User Management, Architecture.
 *   **[Client Documentation](enc-cli/README.md)**: Command Reference, Configuration, SSH Keys.
 
 ### 📚 Use Cases

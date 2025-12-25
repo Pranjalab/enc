@@ -3,7 +3,7 @@ import sys
 
 # Add source directories to sys.path for autodoc
 sys.path.insert(0, os.path.abspath('../enc-cli/src'))
-sys.path.insert(0, os.path.abspath('../server/src'))
+sys.path.insert(0, os.path.abspath('../enc-server/src'))
 
 # -- Project information -----------------------------------------------------
 

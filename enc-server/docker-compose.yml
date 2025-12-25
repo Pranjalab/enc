@@ -2,7 +2,7 @@ services:
   ssh-server:
     build:
       context: ..
-      dockerfile: server/Dockerfile
+      dockerfile: enc-server/Dockerfile
     privileged: true
     cap_add:
       - SYS_ADMIN

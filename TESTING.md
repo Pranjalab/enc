@@ -110,7 +110,7 @@ Perform these steps to manually validate every command in the CLI.
 ### Docker Commands
 *   **Rebuild & Start**:
     ```bash
-    cd server
+    cd enc-server
     docker-compose build --no-cache
     docker-compose up -d --force-recreate
     ```

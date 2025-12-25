@@ -17,7 +17,7 @@ Deployment
 
     .. code-block:: bash
 
-        cd server
+        cd enc-server
 
 2.  **Run the deployment script**:
 

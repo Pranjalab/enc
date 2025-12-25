@@ -65,8 +65,8 @@ config.json
 id_rsa
 id_rsa.pub
 authorized_keys
-server/ssh/
-!server/ssh/generate_ssh_key.md
+enc-server/ssh/
+!enc-server/ssh/generate_ssh_key.md
 users.db
 *.sqlite
 *.db

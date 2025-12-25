@@ -12,7 +12,7 @@ This document explains how to verify the integrity and security of the ENC Serve
 From the project root (one level up from here), run:
 
 ```bash
-pytest -s server/tests/
+pytest -s enc-server/tests/
 ```
 
 ## Test Suites

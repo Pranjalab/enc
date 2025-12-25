@@ -7,8 +7,9 @@ echo -e "\n[1/2] Running Server Unit Tests (SSH, RBAC, Lifecycle)..."
 cd server
 # Ensure docker is up?
 # docker compose up -d --build  <-- Optional: force rebuild
+pip install . || true
 cd ..
-pytest -s server/tests/
+pytest -s enc-server/tests/
 
 # Manage Known Hosts for localhost:2222 (Avoid interactive prompt)
 touch ~/.ssh/known_hosts

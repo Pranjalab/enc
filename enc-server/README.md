@@ -23,7 +23,7 @@ The server creates a security boundary around your code:
 Navigate to the `server` directory and start the container:
 
 ```bash
-cd server
+cd enc-server
 ./deploy.sh
 # Or manually: docker compose up -d --build
 ```
