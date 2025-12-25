@@ -2,7 +2,7 @@
 .. image:: _static/enc_poster.png
    :alt: ENC Poster
    :align: center
-   :width: 100%
+   :width: 30%
 
 |
 
