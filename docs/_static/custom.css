@@ -35,3 +35,10 @@
 a {
     color: #0d2d6a;
 }
+
+/* Limit sidebar logo size */
+.wy-side-nav-search img.logo {
+    width: 60px !important;
+    height: auto !important;
+    margin: 0 auto;
+}
