@@ -50,7 +50,7 @@ Now, create a user and start your first secure project:
    docker exec -it enc-server enc user create <your-username>
 
    # 2. Login from your client
-   enc login <your-username>
+   enc login
    # Enter password
 
    # 3. Setup SSH Access (Auto)
