@@ -15,7 +15,7 @@ On your remote server (Ubuntu/Debian recommended):
 
    # Clone the repository
    git clone https://github.com/Pranjalab/enc.git
-   cd enc/server
+   cd enc/enc-server
 
    # Run the deployment script (Docker required)
    sudo ./deploy.sh
