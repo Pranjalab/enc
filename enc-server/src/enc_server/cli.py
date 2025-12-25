@@ -99,13 +99,6 @@ def server_logout(ctx, session_id):
     server.logout_session(session_id)
     click.echo(json.dumps({"status": "logged_out"}))
 
-@cli.command()
-@click.pass_context
-def init(ctx):
-    """Initialize a new ENC project in the current directory."""
-    check_server_permission(ctx)
-    from enc_server.projects.init import init_project
-    init_project()
 
 @cli.command("server-project-init")
 @click.argument("project_name")
