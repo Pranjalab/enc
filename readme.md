@@ -36,6 +36,7 @@ The system consists of two main components:
 - **👁️ Session Monitoring**: Active sessions are monitored. Closing your terminal locks the session instantly.
 - **🚀 Runtime Encryption**: Code is decrypted on-the-fly into a secure RAM buffer for execution and wiped immediately after.
 - **⚡ SSHFS Integration**: Mount your remote encrypted projects locally to edit them with your favorite IDE (VS Code, Vim, etc.) as if they were on your machine.
+- **🔑 Zero-Hassle SSH Setup**: Admin creates users with only a password. Users can then run a single command (`enc setup ssh-key`) to auto-generate and register SSH keys securely, enabling password-less access instantly.
 - [x] **Role-Based Access Control**: Granular permission management for Admins and Developers.
 
 ---
@@ -85,24 +86,28 @@ Once you have both installed:
     # Follow the prompts to set your Username and Server URL
     ```
 
-2.  **Login**:
-    ```bash
     enc login
     ```
 
-3.  **Create a New Project**:
+3.  **Setup SSH Key (Optional but Recommended)**:
+    ```bash
+    enc setup ssh-key
+    # Auto-generates keys and registers them for password-less access!
+    ```
+
+4.  **Create a New Project**:
     ```bash
     enc project init my-secret-app
     ```
 
-4.  **Mount & Edit**:
+5.  **Mount & Edit**:
     ```bash
     mkdir ./my-app-edit
     enc project mount my-secret-app ./my-app-edit
     ```
     *Now open `./my-app-edit` in VS Code. All files you write are encrypted instantly on the server.*
 
-5.  **Logout**:
+6.  **Logout**:
     ```bash
     enc logout
     # Safely unmounts all projects and closes the secure tunnel.
@@ -135,16 +140,6 @@ We provide a complete, searchable documentation site built with Sphinx.
 *   **[🚀 Quick Start](https://pranjalab.github.io/enc/quick_start.html)**: Get up and running in minutes.
 *   **[✨ Features & Roadmap](https://pranjalab.github.io/enc/features.html)**: Learn about our security model and upcoming VS Code integration.
 *   **[🤝 Collaboration](https://pranjalab.github.io/enc/collaboration.html)**: Read our origin story and how to contribute.
-
-**Build and Host Locally:**
-
-```bash
-cd docs
-pip install sphinx sphinx_rtd_theme
-make html
-# Open the docs:
-open docs/_build/html/index.html
-```
 
 ---
 

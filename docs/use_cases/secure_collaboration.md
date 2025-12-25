@@ -21,10 +21,16 @@ As the admin, you create a user account for your intern on your hosted ENC serve
 docker exec -it enc-server enc user create intern-alice --role user
 ```
 
-### 2. Contributor Key Setup
-Ask the intern for their public SSH key (`id_rsa.pub`). Add it to the server manually or have them send it to you securely.
+### 2. Contributor Self-Onboarding
+The intern installs the ENC CLI and logs in with the password you provided. They then secure their own access.
 
-*Feature Note*: In future versions, admins will be able to add keys via `enc user add-key`.
+```bash
+# Intern's Machine
+enc login
+enc setup ssh-key
+```
+
+**Security Benefit**: You (the admin) never need to see, touch, or manage their private SSH keys. The system handles the handshake securely.
 
 ### 3. Access Control
 You can create a project specifically for them or add them to an existing one.

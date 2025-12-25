@@ -18,6 +18,15 @@ When you mount a project or run code, files are decrypted **only in memory**. Th
 ~~~~~~~~~~~~~~~~
 All communication between the client (your laptop) and the ENC server happens over an encrypted **SSH tunnel**. We leverage the battle-tested security of SSH for authentication and transport.
 
+🔑 Automated Access Management
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+We simplify security onboarding. Admins only need to provision a username and password. Users can then run ``enc setup ssh-key`` to:
+1.  Auto-generate a secure RSA-4096 key pair locally.
+2.  Securely transmit the public key to the server.
+3.  Automatically configure the local client to use this key.
+
+This ensures **User-Owned Security**: The private key is generated on the user's machine and never leaves it. The admin never sees or handles the user's private credentials.
+
 Roadmap
 -------
 

@@ -74,7 +74,6 @@ User Guide
    :caption: Advanced
 
    security
-   hosting
    contact
 
 Indices and tables

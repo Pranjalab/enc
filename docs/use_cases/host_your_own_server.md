@@ -60,12 +60,17 @@ docker exec -it enc-server enc user create <your-username>
 ```
 
 ### Step B: Configure Client Access
-Add your local SSH key to the ENC configuration. This allows the CLI to authenticate automatically.
+Login with the password you set, then auto-configure your SSH access for seamless future connections.
 
 ```bash
 # On your client (laptop)
-enc config add-key ~/.ssh/id_rsa
+enc login
+# Enter password...
+
+# Auto-setup keys
+enc setup ssh-key
 ```
+This command generates a key pair on your machine and registers it with the server securely.
 
 ### Step C: Initialize a Project
 Create a new encrypted project. It will be initialized on the server.
