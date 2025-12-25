@@ -1,0 +1,6 @@
+[submodule "enc-cli"]
+	path = enc-cli
+	url = git@github.com:Pranjalab/enc-cli.git
+[submodule "enc-server"]
+	path = enc-server
+	url = git@github.com:Pranjalab/enc-server.git
