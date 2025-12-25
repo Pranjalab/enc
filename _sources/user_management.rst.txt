@@ -29,8 +29,12 @@ The most convenient way to create users is via the ENC CLI.
 
     You will be prompted to set a password for the new user.
 
-3.  **SSH Key Assignment (Optional)**:
-    You can optionally provide a public SSH key during creation to pre-authorize the user.
+3.  **SSH Key Assignment (Legacy)**:
+    You *can* provide a public SSH key during creation, but it is **recommended** to skip this. Users can easily set up their own keys after their first login using:
+
+    .. code-block:: bash
+
+        enc setup ssh-key
 
 Managing Permissions
 --------------------

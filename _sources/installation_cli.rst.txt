@@ -54,7 +54,7 @@ Once installed, you must configure the CLI to point to your server.
 2.  Follow the prompts:
     *   **Server URL**: Enter the full URL (e.g., ``http://your-server.com:2222``).
     *   **Username**: Your assigned username.
-    *   **SSH Key Path**: Path to your private SSH key (e.g., ``~/.ssh/id_ed25519``).
+    *   **SSH Key Path**: Leaving this blank is fine! You can run ``enc setup ssh-key`` later to auto-generate one.
 
 You can check your configuration at any time with:
 

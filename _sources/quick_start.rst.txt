@@ -49,13 +49,18 @@ Now, create a user and start your first secure project:
    # (On the server)
    docker exec -it enc-server enc user create <your-username>
 
-   # 2. Add your local SSH key to the server
-   enc config add-key <your-private-key-path>
+   # 2. Login from your client
+   enc login
+   # Enter password
 
-   # 3. Initialize a new encrypted project
+   # 3. Setup SSH Access (Auto)
+   enc setup ssh-key
+   # Generates and registers keys automatically!
+
+   # 4. Initialize a new encrypted project
    enc project init my-secure-algo
 
-   # 4. Mount it locally
+   # 5. Mount it locally
    enc project mount my-secure-algo
 
 Your project is now mounted at ``~/enc/projects/my-secure-algo``. Any files you create there are encrypt-on-write!
