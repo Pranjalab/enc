@@ -19,12 +19,12 @@ class Authentication:
             "user add", "user list", "user remove", 
             "init", "server-project-init", "server-project-mount", "server-project-unmount", "server-project-sync", "server-project-run",
             "show users", "server-user-create", "server-user-delete", "server-user-list",
-            "server-project-list", "project list"
+            "server-project-list", "project list", "server-setup-ssh-key"
         ],
         ROLE_DEV: [
             "status", "server-login", "server-logout",
             "init", "server-project-init", "server-project-mount", "server-project-unmount", "server-project-sync", "server-project-run",
-            "server-project-list", "project list", "server-project-remove"
+            "server-project-list", "project list", "server-project-remove", "server-setup-ssh-key"
         ]
     }
 

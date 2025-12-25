@@ -229,6 +229,24 @@ def list_projects(ctx):
             
     console.print(table)
 
+@cli.command("server-setup-ssh-key")
+@click.option("--key", required=True, help="Public SSH key content")
+@click.pass_context
+def server_setup_ssh_key(ctx, key):
+    """Internal: Add public SSH key to the current user."""
+    check_server_permission(ctx)
+    import getpass
+    import json
+    
+    # Identify user from system (since they are logged in via SSH/Session)
+    user = getpass.getuser()
+    
+    server = EncServer()
+    success, res = server.add_ssh_key(user, key)
+    
+    log_result(ctx, res)
+    click.echo(json.dumps(res))
+
 @cli.group()
 def user():
     """Manage ENC users."""

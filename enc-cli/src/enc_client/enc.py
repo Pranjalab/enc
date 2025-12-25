@@ -109,6 +109,67 @@ class Enc:
         self.config[key] = value
         self.save_config(self.config, self.active_config_path)
 
+    def setup_ssh_key_flow(self):
+        """Interactive flow to generate and setup SSH key."""
+        # 1. Determine local .ssh directory based on ACTIVE config context
+        # self.config_dir is set in init (derived from active_config_path)
+        ssh_dir = os.path.join(self.config_dir, ".ssh")
+        if not os.path.exists(ssh_dir):
+            os.makedirs(ssh_dir, mode=0o700)
+            
+        key_name = "enc_id_rsa"
+        private_key_path = os.path.join(ssh_dir, key_name)
+        public_key_path = private_key_path + ".pub"
+        
+        # 2. Generate Key if missing
+        if not os.path.exists(private_key_path):
+            console.print(f"Generating new SSH key pair in [cyan]{ssh_dir}[/cyan]...")
+            try:
+                # ssh-keygen -t rsa -b 4096 -f path -N "" -q
+                subprocess.run(
+                    ["ssh-keygen", "-t", "rsa", "-b", "4096", "-f", private_key_path, "-N", "", "-q"],
+                    check=True
+                )
+                os.chmod(private_key_path, 0o600)
+                console.print("[green]SSH key pair generated.[/green]")
+            except subprocess.CalledProcessError as e:
+                console.print(f"[red]Failed to generate SSH key:[/red] {e}")
+                return False
+        else:
+            console.print(f"Using existing key: [cyan]{private_key_path}[/cyan]")
+            
+        # 3. Read Public Key
+        try:
+            with open(public_key_path, 'r') as f:
+                pub_key_content = f.read().strip()
+        except Exception as e:
+            console.print(f"[red]Failed to read public key:[/red] {e}")
+            return False
+            
+        # 4. Send to Server (requires Login)
+        session_id = self.config.get("session_id")
+        if not session_id:
+            console.print("[yellow]Please login first. We need an active session to authorize key addition.[/yellow]")
+            return False
+            
+        console.print("Sending public key to ENC Server...")
+        cmd = self.get_remote_cmd(f"server-setup-ssh-key --key {shlex.quote(pub_key_content)}")
+        
+        # Use existing _run_remote helper which handles SSH execution
+        res = self._run_remote(cmd)
+        
+        if res and res.get("status") == "success":
+            console.print("[bold green]Success![/bold green] Server accepted your key.")
+            
+            # 5. Update Local Config
+            self.set_config_value("ssh_key", private_key_path)
+            console.print(f"Local configuration updated to use: [cyan]{private_key_path}[/cyan]")
+            return True
+        else:
+             msg = res.get("message") if res else "Unknown Error"
+             console.print(f"[red]Server rejected key setup:[/red] {msg}")
+             return False
+
     def get_config_value(self, key):
         return self.config.get(key)
         

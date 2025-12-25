@@ -224,6 +224,19 @@ def internal_watchdog(ppid):
         return
     enc_manager.session_manager.monitor_session(enc_manager.logout, ppid=ppid)
 
+@cli.group()
+def setup():
+    """Setup and configuration utilities."""
+    pass
+
+@setup.command("ssh-key")
+def setup_ssh_key():
+    """Auto-generate and register SSH key with server."""
+    if not enc_manager.config.get("session_id"):
+        console.print("[yellow]Please login first.[/yellow]")
+        return
+    enc_manager.setup_ssh_key_flow()
+
 # --- Connection Commands ---
 
 @cli.command("check-connection")

@@ -385,6 +385,60 @@ class EncServer:
         self._update_policy(username, role)
         return True
 
+    def add_ssh_key(self, username, ssh_key_content):
+        """Append a public key to the user's authorized_keys file."""
+        import subprocess
+        import getpass
+        
+        try:
+            current_user = getpass.getuser()
+            ssh_dir = f"/home/{username}/.ssh"
+            auth_keys = f"{ssh_dir}/authorized_keys"
+            
+            if username == current_user:
+                # Self-service: Use native python operations (no sudo)
+                os.makedirs(ssh_dir, mode=0o700, exist_ok=True)
+                
+                # Check for duplicate
+                if os.path.exists(auth_keys):
+                    try:
+                        with open(auth_keys, 'r') as f:
+                            existing = f.read()
+                            if ssh_key_content in existing:
+                                return True, {"status": "success", "message": "Key already exists"}
+                    except Exception:
+                        pass # Ignore read errors, try appending
+                
+                # Append key
+                with open(auth_keys, 'a') as f:
+                    f.write(f"\n{ssh_key_content}\n")
+                    
+                os.chmod(auth_keys, 0o600)
+                return True, {"status": "success", "message": "SSH key added successfully"}
+                
+            else:
+                # Admin/Other: Use sudo
+                # Ensure .ssh dir exists
+                subprocess.run(["sudo", "mkdir", "-p", ssh_dir], check=True)
+                subprocess.run(["sudo", "chmod", "700", ssh_dir], check=True)
+                
+                # Append key securely
+                check_cmd = f"sudo grep -F '{ssh_key_content}' {auth_keys}"
+                try:
+                    subprocess.run(check_cmd, shell=True, check=True, stdout=subprocess.DEVNULL)
+                    return True, {"status": "success", "message": "Key already exists"}
+                except subprocess.CalledProcessError:
+                    cmd = f"echo '{ssh_key_content}' | sudo tee -a {auth_keys} > /dev/null"
+                    subprocess.run(cmd, shell=True, check=True)
+                    
+                    subprocess.run(["sudo", "chmod", "600", auth_keys], check=True)
+                    subprocess.run(["sudo", "chown", "-R", f"{username}:", ssh_dir], check=True)
+                    
+                    return True, {"status": "success", "message": "SSH key added successfully"}
+                
+        except Exception as e:
+            return False, {"status": "error", "message": f"Failed to add SSH key: {e}"}
+
     def delete_project(self, project_name, session_id):
         """Remove a project from the system (files and policy)."""
         import shutil
