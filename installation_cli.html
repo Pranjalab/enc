@@ -238,22 +238,21 @@
 </section>
 <section id="installation-steps">
 <h2>Installation Steps<a class="headerlink" href="#installation-steps" title="Link to this heading"></a></h2>
-<p>We provide an automated installer script that sets up a virtual environment and installs all dependencies.</p>
-<ol class="arabic">
-<li><p><strong>Navigate to the client directory</strong>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>enc-cli
+<p>The recommended way to install ENC Client is via <code class="docutils literal notranslate"><span class="pre">pip</span></code>:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>enc-cli
 </pre></div>
 </div>
-</li>
-<li><p><strong>Run the installation script</strong>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./install.sh
+<p>After installing, run the setup wizard to handle dependencies and path configuration:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span>install
 </pre></div>
 </div>
-<p>This script will:
-*   Create a virtual environment in <code class="docutils literal notranslate"><span class="pre">~/.enc-cli/venv</span></code>.
-*   Install Python dependencies (<cite>rich</cite>, <cite>click</cite>, <cite>pexpect</cite>, etc.).
-*   Symlink the <code class="docutils literal notranslate"><span class="pre">enc</span></code> executable to a directory in your PATH (e.g., <code class="docutils literal notranslate"><span class="pre">~/.local/bin</span></code>).</p>
-</li>
+<p>This command will:
+*   Check for <code class="docutils literal notranslate"><span class="pre">sshfs</span></code> and install it if missing (requires sudo).
+*   Ensure the <code class="docutils literal notranslate"><span class="pre">enc</span></code> executable is in your PATH.
+*   Prompt you to initialize your configuration.</p>
+</div></blockquote>
+<ol class="arabic" start="3">
 <li><p><strong>Verify Installation</strong>:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>enc<span class="w"> </span>--version
 </pre></div>

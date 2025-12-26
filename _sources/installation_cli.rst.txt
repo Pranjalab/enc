@@ -19,24 +19,22 @@ Before installing, ensure you have:
 Installation Steps
 ------------------
 
-We provide an automated installer script that sets up a virtual environment and installs all dependencies.
-
-1.  **Navigate to the client directory**:
-
+The recommended way to install ENC Client is via ``pip``:
+    
     .. code-block:: bash
-
-        cd enc-cli
-
-2.  **Run the installation script**:
-
+    
+        pip install enc-cli
+    
+    After installing, run the setup wizard to handle dependencies and path configuration:
+    
     .. code-block:: bash
-
-        ./install.sh
-
-    This script will:
-    *   Create a virtual environment in ``~/.enc-cli/venv``.
-    *   Install Python dependencies (`rich`, `click`, `pexpect`, etc.).
-    *   Symlink the ``enc`` executable to a directory in your PATH (e.g., ``~/.local/bin``).
+    
+        enc install
+        
+    This command will:
+    *   Check for ``sshfs`` and install it if missing (requires sudo).
+    *   Ensure the ``enc`` executable is in your PATH.
+    *   Prompt you to initialize your configuration.
 
 3.  **Verify Installation**:
 
