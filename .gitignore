@@ -70,6 +70,10 @@ enc-server/ssh/
 users.db
 *.sqlite
 *.db
-tests/test_project/ssh_key
-docs/_build/
-tests/logs/test_20251226_121513.txt
+tests/*
+!tests/check_session_security.py
+!tests/check_session_security.sh
+!tests/check_session_spoof.sh
+!tests/check_admin_login.sh
+!tests/check_dev_user.sh
+!tests/test_all.sh
