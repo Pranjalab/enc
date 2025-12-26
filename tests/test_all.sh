@@ -18,15 +18,30 @@ echo "Logging results to: $LOG_FILE"
     echo "========================================"
     echo "RUNNING ADMIN TEST SUITE"
     echo "========================================"
+    echo -e "\n"
     ./check_admin_login.sh
+    echo -e "\n"
 
-    echo ""
     echo "========================================"
     echo "RUNNING DEV USER TEST SUITE"
     echo "========================================"
     ./check_dev_user.sh
+    echo -e "\n"
 
-    echo ""
+    echo "========================================"
+    echo "RUNNING SESSION SPOOFING TEST"
+    echo "========================================"
+    chmod +x check_session_spoof.sh
+    ./check_session_spoof.sh
+    echo -e "\n"
+
+    echo "========================================"
+    echo "RUNNING SESSION MONITORING TEST"
+    echo "========================================"
+    chmod +x check_server_session_monitoring.sh
+    ./check_server_session_monitoring.sh
+    echo -e "\n"
+
     echo "✅ ALL TESTS PASSED"
 ) 2>&1 | tee "$LOG_FILE"
 

@@ -77,3 +77,5 @@ tests/*
 !tests/check_admin_login.sh
 !tests/check_dev_user.sh
 !tests/test_all.sh
+!tests/verify_session_monitoring.py
+!tests/check_server_session_monitoring.sh
