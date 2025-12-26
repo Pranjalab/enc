@@ -6,6 +6,10 @@
   [![GitHub Release](https://img.shields.io/badge/release-v0.1.3-blue)](https://github.com/Pranjalab/enc/releases)
   [![PyPI](https://img.shields.io/pypi/v/enc-cli?color=green)](https://pypi.org/project/enc-cli/)
   [![Docker Hub](https://img.shields.io/badge/docker-enc--server-blue?logo=docker)](https://hub.docker.com/r/pranjalab/enc-server)
+  <br>
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+  [![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos-lightgrey)](https://github.com/Pranjalab/enc)
 </div>
 
 ![ENC Poster](docs/_static/enc_poster.png)
