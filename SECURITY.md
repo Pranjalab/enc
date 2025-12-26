@@ -13,9 +13,18 @@ Users are strongly encouraged to upgrade to the latest version to receive securi
 
 ---
 
+## Container Security
+
+The `enc-server` Docker image is hardened for production use:
+*   **Minimal Base**: Built on `alpine:3.20` to reduce attack surface.
+*   **Health Checks**: Integrated health monitoring for SSH services.
+*   **Pinned Versions**: dependencies are pinned to ensuring reproducibility.
+*   **Least Privilege**: `admin` user is used for operations, though capability reduction is ongoing (requires `SYS_ADMIN` for FUSE).
+
 ## Reporting a Vulnerability
 
-Security is a core goal of the ENC project. If you discover a security vulnerability, please report it **responsibly and privately**.
+Please report vulnerabilities directly to [pranjalab@gmail.com](mailto:pranjalab@gmail.com).
+We aim to acknowledge reports within 48 hours.esponsibly and privately**.
 
 ### 🔐 How to Report
 - **Do NOT** open a public GitHub issue for security vulnerabilities.

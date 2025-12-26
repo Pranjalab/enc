@@ -5,9 +5,18 @@
   [![Documentation Status](https://img.shields.io/badge/docs-live-brightgreen)](https://pranjalab.github.io/enc/)
   [![GitHub Release](https://img.shields.io/badge/release-v0.1.3-blue)](https://github.com/Pranjalab/enc/releases)
   [![PyPI](https://img.shields.io/pypi/v/enc-cli?color=green)](https://pypi.org/project/enc-cli/)
+  [![Docker Hub](https://img.shields.io/badge/docker-enc--server-blue?logo=docker)](https://hub.docker.com/r/pranjalab/enc-server)
 </div>
 
 ![ENC Poster](docs/_static/enc_poster.png)
+
+---
+
+## 🐋 Quick Container Start
+Pull the latest hardened server image directly from Docker Hub:
+```bash
+docker pull pranjalab/enc-server:latest
+```
 
 > **Ever wondered how secure your projects and algorithms really are while development and deployment on a server?**
 
