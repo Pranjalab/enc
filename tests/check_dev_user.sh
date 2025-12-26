@@ -8,12 +8,21 @@ rm -rf dev_user
 mkdir -p dev_user
 cd dev_user
 
+# Detect or create a test SSH key for the dev user setup
+DEV_SSH_KEY_PATH="$(pwd)/dev_id_ed25519"
+if [ ! -f "$DEV_SSH_KEY_PATH" ]; then
+    echo "Creating a temporary test key for dev_user..."
+    ssh-keygen -t ed25519 -f "$DEV_SSH_KEY_PATH" -N ""
+fi
+
 echo "1. Initializing ENC (Local Config)..."
-# Inputs: config_type=local, url, username, ssh_key(empty)
-printf "local\nhttp://localhost:2222\ndev_user\n\n" | enc init
+printf "local\nhttp://localhost:2222\ndev_user\n$DEV_SSH_KEY_PATH\n" | enc init
 
 echo "2. Logging in..."
 enc login --password Dev_user
+
+echo "2.5 Setup SSH Key (Authorize)..."
+enc setup ssh-key --password Dev_user
 
 echo "3. Showing Config..."
 enc show -v

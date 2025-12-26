@@ -3,7 +3,7 @@ set -e
 
 # Setup
 TEST_USER="admin"
-TEST_PASS="secure_admin_pass"
+TEST_PASS="admin"
 PROJECT="mon_test_proj"
 MOUNT_DIR="./mon_mount_point"
 
@@ -23,12 +23,12 @@ rm -rf "$MOUNT_DIR"
 enc logout > /dev/null 2>&1 || true
 
 # 1. Test Command Inactivity Logout
-echo "Test 1: Auto-logout after command inactivity (16s > 15s)"
+echo "Test 1: Auto-logout after command inactivity (32s > 30s)"
 echo "Logging in..."
 enc login --password "$TEST_PASS" > /dev/null
 
-echo "Wait 16s..."
-sleep 16
+echo "Wait 32s..."
+sleep 32
 
 echo "Checking status..."
 if enc project list 2>&1 | grep -qE "Please login first|Failed to retrieve project list|Invalid or expired session"; then
@@ -74,8 +74,8 @@ fi
 
 # B. Auto-Logout No Activity
 echo "Subtest B: Auto-logout after NO file activity"
-echo "Waiting 16s with NO activity..."
-sleep 16
+echo "Waiting 32s with NO activity..."
+sleep 32
 
 # Check session - should be closed
 if enc project list 2>&1 | grep -qE "Please login first|Failed to retrieve project list|Invalid or expired session"; then

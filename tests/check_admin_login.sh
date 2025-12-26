@@ -8,17 +8,25 @@ rm -rf admin_user
 mkdir -p admin_user
 cd admin_user
 
+# Detect or create a test SSH key
+SSH_KEY_PATH="$HOME/.ssh/id_ed25519"
+if [ ! -f "$SSH_KEY_PATH" ]; then
+    SSH_KEY_PATH="$HOME/.ssh/id_rsa"
+fi
+if [ ! -f "$SSH_KEY_PATH" ]; then
+    echo "Warning: No standard SSH key found. Creating a temporary test key..."
+    ssh-keygen -t ed25519 -f ./test_key -N ""
+    SSH_KEY_PATH="$(pwd)/test_key"
+fi
+
 echo "1. Initializing ENC (Local Config)..."
-# Inputs: config_type=local, url, username, ssh_key
-# The CLI prompts for: 
-# 1. Global/Local? -> local
-# 2. URL -> http://localhost:2222
-# 3. Username -> admin
-# 4. SSH Key Path -> /Users/pranjalbhaskare/.ssh/enc_key
-printf "local\nhttp://localhost:2222\nadmin\n/Users/pranjalbhaskare/.ssh/enc_key\n" | enc init
+printf "local\nhttp://localhost:2222\nadmin\n$SSH_KEY_PATH\n" | enc init
 
 echo "2. Logging in..."
-enc login
+enc login --password admin
+
+echo "2.5 Setup SSH Key (Authorize)..."
+enc setup ssh-key --password admin
 
 echo "3. Showing Config..."
 enc show -v
@@ -51,7 +59,7 @@ enc logout
 
 echo "11. Login again and List Users..."
 # Re-login as admin
-enc login
+enc login --password admin
 enc user list
 
 echo "12. Creating Developer User..."

@@ -3,7 +3,7 @@ set -e
 
 # Setup
 TEST_USER="admin"
-TEST_PASS="secure_admin_pass"
+TEST_PASS="admin"
 CONFIG_DIR="$HOME/.enc"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 
