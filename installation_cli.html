@@ -224,10 +224,16 @@
 <section id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
 <p>Before installing, ensure you have:</p>
-<ul class="simple">
+<ul>
 <li><p><strong>Python 3.8+</strong>: Verify with <code class="docutils literal notranslate"><span class="pre">python3</span> <span class="pre">--version</span></code>.</p></li>
 <li><p><strong>pip</strong>: The Python package installer.</p></li>
-<li><p><strong>sshfs</strong>: Required for the mounting feature (install via your package manager, e.g., <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">sshfs</span></code> or <code class="docutils literal notranslate"><span class="pre">apt</span> <span class="pre">install</span> <span class="pre">sshfs</span></code>).</p></li>
+<li><p><strong>sshfs</strong>: Required for the mounting feature.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If mounting fails or <cite>sshfs</cite> is missing, please reinstall it manually:
+<code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">--cask</span> <span class="pre">macfuse</span> <span class="pre">&amp;&amp;</span> <span class="pre">brew</span> <span class="pre">install</span> <span class="pre">sshfs</span></code></p>
+</div>
+</li>
 </ul>
 </section>
 <section id="installation-steps">
