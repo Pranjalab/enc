@@ -1,0 +1,166 @@
+========================================
+RUNNING ADMIN TEST SUITE
+========================================
+=== Starting Admin Login Test ===
+1. Initializing ENC (Local Config)...
+╭────────────────────────────────── ENC Init ──────────────────────────────────╮
+│ Welcome to ENC Configuration Wizard                                          │
+╰──────────────────────────────────────────────────────────────────────────────╯
+Initialize Global (~/.enc) or Local (./.enc) config? [global/local] (global): Initializing LOCAL configuration in 
+/Users/pranjalbhaskare/projects/enc/tests/admin_user/.enc
+Enter ENC Server URL (http://localhost:2222): Enter Username: Enter SSH Key Path (): Configuration initialized at 
+/Users/pranjalbhaskare/projects/enc/tests/admin_user/.enc/config.json
+Run 'enc check-connection' to verify.
+2. Logging in...
+Authenticating as admin...
+Login Success! Session ID: e0adf653-48ed-4583-9d0b-efb1741b13bf
+3. Showing Config...
+                    ENC Configuration                     
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Key             ┃ Value                                ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ url             │ http://localhost:2222                │
+│ username        │ admin                                │
+│ ssh_key         │ /Users/pranjalbhaskare/.ssh/enc_key  │
+│ session_id      │ e0adf653-48ed-4583-9d0b-efb1741b13bf │
+│ active_projects │ None                                 │
+└─────────────────┴──────────────────────────────────────┘
+4. Listing Projects...
+You don't have access to any projects yet.
+5. Creating Project Test Directory...
+6. Initializing Project 'test_project'...
+Initializing project 'test_project' in 
+'/Users/pranjalbhaskare/projects/enc/tests/admin_user/project_test'...
+Backing up existing files to 
+/Users/pranjalbhaskare/projects/enc/tests/admin_user/.enc/backups/test_project_t
+emp...
+Successfully mounted project test_project.
+Restoring files to encrypted vault...
+Project test_project initialized successfully.
+Project 'test_project' initialized successfully at 
+'/Users/pranjalbhaskare/projects/enc/tests/admin_user/project_test'.
+
+Auto-Unmount Notice:
+Project 'test_project' is securely mounted.
+It will automatically unmount in 5 seconds.
+Type 'y' and press ENTER to stay mounted.
+
+
+Unmounting... Closing secure bridge.
+Unmounted /Users/pranjalbhaskare/projects/enc/tests/admin_user/project_test.
+Remote project 'test_project' unmounted.
+7. Checking Project List (Mounted)...
+                                    Your Projects                                     
+┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Project Name ┃ Local Mount ┃ Server Mount                             ┃ Exec Point ┃
+┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+│ test_project │             │ /home/admin/.enc/run/master/test_project │            │
+└──────────────┴─────────────┴──────────────────────────────────────────┴────────────┘
+8. Unmounting...
+Unmounting project 'test_project'...
+Project 'test_project' is not currently active.
+9. Mounting Again...
+Mounting project 'test_project' to 
+'/Users/pranjalbhaskare/projects/enc/tests/admin_user/project_test'...
+Successfully mounted project test_project.
+Project mounted and bridged.
+10. Logout...
+Unmounted /Users/pranjalbhaskare/projects/enc/tests/admin_user/project_test.
+Remote project 'test_project' unmounted.
+Logged out successfully. Local sessions cleared.
+11. Login again and List Users...
+Authenticating as admin...
+Login Success! Session ID: 4912ab17-8cae-405c-943f-8eff08fca114
+     ENC Users      
+┏━━━━━━━━━━┳━━━━━━━┓
+┃ Username ┃ Role  ┃
+┡━━━━━━━━━━╇━━━━━━━┩
+│ admin    │ admin │
+└──────────┴───────┘
+12. Creating Developer User...
+Path to public SSH key (optional, press Enter to skip): Creating user dev_user with role user...
+User dev_user created successfully.
+=== Admin Test Complete ===
+
+========================================
+RUNNING DEV USER TEST SUITE
+========================================
+=== Starting Dev User Test ===
+1. Initializing ENC (Local Config)...
+╭────────────────────────────────── ENC Init ──────────────────────────────────╮
+│ Welcome to ENC Configuration Wizard                                          │
+╰──────────────────────────────────────────────────────────────────────────────╯
+Initialize Global (~/.enc) or Local (./.enc) config? [global/local] (global): Initializing LOCAL configuration in 
+/Users/pranjalbhaskare/projects/enc/tests/dev_user/.enc
+Enter ENC Server URL (http://localhost:2222): Enter Username: Enter SSH Key Path (): Configuration initialized at 
+/Users/pranjalbhaskare/projects/enc/tests/dev_user/.enc/config.json
+Run 'enc check-connection' to verify.
+2. Logging in...
+Authenticating as dev_user...
+Login Success! Session ID: 60cfbd6e-327c-44d8-9501-25862ce2d86b
+3. Showing Config...
+                    ENC Configuration                     
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Key             ┃ Value                                ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ url             │ http://localhost:2222                │
+│ username        │ dev_user                             │
+│ ssh_key         │                                      │
+│ session_id      │ 60cfbd6e-327c-44d8-9501-25862ce2d86b │
+│ active_projects │ None                                 │
+└─────────────────┴──────────────────────────────────────┘
+4. Setting up SSH Key...
+Generating new SSH key pair in 
+/Users/pranjalbhaskare/projects/enc/tests/dev_user/.enc/.ssh...
+SSH key pair generated.
+Sending public key to ENC Server...
+Success! Server accepted your key.
+Local configuration updated to use: 
+/Users/pranjalbhaskare/projects/enc/tests/dev_user/.enc/.ssh/enc_id_rsa
+5. Creating Dev Project...
+6. Initializing Project 'test_project' (Dev Context)...
+Initializing project 'test_project' in 
+'/Users/pranjalbhaskare/projects/enc/tests/dev_user/dev_project_test'...
+Backing up existing files to 
+/Users/pranjalbhaskare/projects/enc/tests/dev_user/.enc/backups/test_project_tem
+p...
+Successfully mounted project test_project.
+Restoring files to encrypted vault...
+Project test_project initialized successfully.
+Project 'test_project' initialized successfully at 
+'/Users/pranjalbhaskare/projects/enc/tests/dev_user/dev_project_test'.
+
+Auto-Unmount Notice:
+Project 'test_project' is securely mounted.
+It will automatically unmount in 5 seconds.
+Type 'y' and press ENTER to stay mounted.
+
+
+Unmounting... Closing secure bridge.
+Unmounted /Users/pranjalbhaskare/projects/enc/tests/dev_user/dev_project_test.
+Remote project 'test_project' unmounted.
+7. Checking Project List...
+                                      Your Projects                                      
+┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Project Name ┃ Local Mount ┃ Server Mount                                ┃ Exec Point ┃
+┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+│ test_project │             │ /home/dev_user/.enc/run/master/test_project │            │
+└──────────────┴─────────────┴─────────────────────────────────────────────┴────────────┘
+8. Unmounting...
+Unmounting project 'test_project'...
+Project 'test_project' is not currently active.
+9. Mounting...
+Mounting project 'test_project' to 
+'/Users/pranjalbhaskare/projects/enc/tests/dev_user/dev_project_test'...
+Successfully mounted project test_project.
+Project mounted and bridged.
+10. Verification: Access Check...
+Permission Denied: You are not allowed to list users.
+SUCCESS: Dev user denied user list access (Permission Denied expected).
+11. Logout...
+Unmounted /Users/pranjalbhaskare/projects/enc/tests/dev_user/dev_project_test.
+Remote project 'test_project' unmounted.
+Logged out successfully. Local sessions cleared.
+=== Dev User Test Complete ===
+
+✅ ALL TESTS PASSED
