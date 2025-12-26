@@ -181,7 +181,10 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Security</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#architecture-overview">Architecture Overview</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#why-ssh-keys">Why SSH Keys?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#session-security">Session Security</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#session-security">Session Security</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#session-monitoring-protocols">Session Monitoring Protocols</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="contact.html">Contact</a><ul>
@@ -237,10 +240,29 @@
 </section>
 <section id="session-security">
 <h2>Session Security<a class="headerlink" href="#session-security" title="Link to this heading"></a></h2>
+<p>ENC implements a multi-layered session monitoring system to ensure integrity and automatic cleanup.</p>
+<section id="session-monitoring-protocols">
+<h3>Session Monitoring Protocols<a class="headerlink" href="#session-monitoring-protocols" title="Link to this heading"></a></h3>
+<p><strong>1. Server-Side Monitoring</strong></p>
 <ul class="simple">
-<li><p><strong>Auto-Lock</strong>: If the SSH connection drops (e.g., laptop sleep, network fail), the server automatically unmounts the decrypted project view.</p></li>
-<li><p><strong>Isolation</strong>: Each user runs in a sandboxed shell environment, preventing lateral movement within the server OS.</p></li>
+<li><p><strong>Inactivity Timeout</strong>: Sessions are strictly limited. If no CLI commands are executed or no file activity is detected for <strong>10 minutes</strong> (600 seconds), the session is automatically closed.</p></li>
+<li><p><strong>Mount Activity Keep-Alive</strong>: The server monitors active mounts. As long as you are reading or writing files in the mounted project, the session stays alive.</p></li>
+<li><p><strong>Closure Conditions</strong>:
+*   <strong>Command Timeout</strong>: &gt; 10 mins idle.
+*   <strong>Mount Timeout</strong>: &gt; 10 mins without file IO.
+*   <strong>Explicit Logout</strong>: <cite>enc logout</cite>.</p></li>
 </ul>
+<p><strong>2. Client-Side Monitoring</strong></p>
+<ul class="simple">
+<li><p><strong>Project Integrity Monitor</strong>: The CLI checks every <strong>3 seconds</strong> to ensure your local mount point is valid. If the connection drops or the directory is tampered with, it forces a local unmount to prevent stale handles.</p></li>
+<li><p><strong>Session Watchdog</strong>: A background process monitors your terminal window (Parent PID). If you close the terminal or kill the shell, the watchdog immediately triggers a secure logout sequence, ensuring no session is left dangling.</p></li>
+</ul>
+<p><strong>3. Isolation</strong></p>
+<ul class="simple">
+<li><p><strong>Auto-Lock</strong>: If the SSH connection drops, the server automatically unmounts the decrypted project view.</p></li>
+<li><p><strong>Sandboxing</strong>: Each user runs in a restricted shell environment, preventing lateral movement within the server OS.</p></li>
+</ul>
+</section>
 </section>
 </section>
 
