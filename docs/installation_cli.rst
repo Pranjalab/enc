@@ -10,7 +10,11 @@ Before installing, ensure you have:
 
 *   **Python 3.8+**: Verify with ``python3 --version``.
 *   **pip**: The Python package installer.
-*   **sshfs**: Required for the mounting feature (install via your package manager, e.g., ``brew install sshfs`` or ``apt install sshfs``).
+*   **sshfs**: Required for the mounting feature.
+    
+    .. note:: 
+        If mounting fails or `sshfs` is missing, please reinstall it manually:
+        ``brew install --cask macfuse && brew install sshfs``
 
 Installation Steps
 ------------------

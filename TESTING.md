@@ -10,6 +10,7 @@ Reliable python scripts are provided to verify the system end-to-end.
 *   Docker running (Server).
 *   Python 3.9+ installed.
 *   `enc` client installed.
+*   `sshfs` installed (for mount verification).
 
 ### A. Lifecycle Verification (New Users)
 This script verifies that a new user can be created, logged in, and used to create/sync/run a project.

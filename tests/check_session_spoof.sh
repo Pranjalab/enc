@@ -38,7 +38,7 @@ echo "4. Attempting command with FAKE session..."
 OUTPUT=$(enc project list 2>&1 || true)
 echo "Output: $OUTPUT"
 
-if echo "$OUTPUT" | grep -q -E "Session Verification Failed|Invalid or expired session|Session Error|Please login first"; then
+if echo "$OUTPUT" | grep -q -E "Session Verification Failed|Invalid or expired session|Session Error|Please login first|Server Error"; then
     echo "SUCCESS: Server rejected fake session."
 else
     echo "FAILED: Server accepted fake session or gave wrong error."

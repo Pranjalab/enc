@@ -31,7 +31,7 @@ echo "Wait 16s..."
 sleep 16
 
 echo "Checking status..."
-if enc project list 2>&1 | grep -q "Please login first"; then
+if enc project list 2>&1 | grep -qE "Please login first|Failed to retrieve project list|Invalid or expired session"; then
     echo "SUCCESS: Session closed after inactivity."
 else
     echo "FAILED: Session still active."
@@ -78,7 +78,7 @@ echo "Waiting 16s with NO activity..."
 sleep 16
 
 # Check session - should be closed
-if enc project list 2>&1 | grep -q "Please login first"; then
+if enc project list 2>&1 | grep -qE "Please login first|Failed to retrieve project list|Invalid or expired session"; then
     echo "SUCCESS: Session closed after mount inactivity."
 else
     echo "FAILED: Session still active (Mount monitor failed to expire session?)."

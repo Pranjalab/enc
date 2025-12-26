@@ -73,6 +73,7 @@ You need an ENC Server to host your projects. You can run one on your local mach
 ### 2. The Client
 Install the `enc` CLI to communicate with your server.
 👉 **[Read the Client Installation Guide](enc-cli/README.md)**
+> **Requirement**: Mounting requires `sshfs`. Ensure it is installed (`brew install sshfs`).
 
 ---
 
