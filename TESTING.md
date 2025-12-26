@@ -43,8 +43,9 @@ Perform these steps to manually validate every command in the CLI.
 ### A. Setup & Configuration
 1.  **Install Client**:
     ```bash
-    cd enc-cli
-    ./install.sh
+    pip install enc-cli
+    enc install
+    # Ensure ~/.local/bin is in PATH or source rc file
     source ~/.zshrc
     ```
 2.  **Configure Admin**:
