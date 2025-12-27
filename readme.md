@@ -23,20 +23,24 @@ To solve this problem, we’re excited to introduce the **ENC Project**—a secu
 
 ---
 
----
-
 ## ⚡ Quick Start
 
 Follow these steps to get your ENC ecosystem up and running in minutes.
 
-### 1. Clone the Repository
+### 1. Generate SSH Key (Pre-requisite)
+If you don't already have an SSH key, generate one:
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/enc_admin_key -N ""
+```
+
+### 2. Clone the Repository
 Clone the project along with its submodules:
 ```bash
 git clone --recurse-submodules https://github.com/Pranjalab/enc.git
 cd enc
 ```
 
-### 2. server Setup 
+### 3. Server Setup 
 Navigate to the server directory and configure your environment:
 ```bash
 cd enc-server
@@ -46,17 +50,22 @@ cd enc-server
 echo "ADMIN_PASSWORD=your_secure_password" > .env
 echo "ENC_SESSION_TIMEOUT=600" >> .env
 
-# 2. Setup SSH Host Keys Volume
-# Ensure the host keys directory exists so keys persist across restarts
+# 2. Setup SSH Keys
 mkdir -p ssh/host_keys
+touch ssh/authorized_keys
+chmod 600 ssh/authorized_keys
 
-# 3. Deploy
+# 3. Add your Public Key to Server (Crucial!)
+# This allows the server to recognize your key
+cat ~/.ssh/enc_admin_key.pub >> ssh/authorized_keys
+
+# 4. Deploy
 # Check/Update docker-compose.yml if needed (e.g., ports)
 docker compose up --build -d
 ```
-*The server is now running on port `2222` (default).*
+*The server is now running on port `2222` (default) and has authorized your key.*
 
-### 3. Client CLI Setup (`enc-cli`)
+### 4. Client CLI Setup (`enc-cli`)
 Now, install the client on your local machine:
 ```bash
 cd ../enc-cli
@@ -70,7 +79,7 @@ pip install .
 enc install
 ```
 
-### 4. Initialize & Login
+### 5. Initialize & Login
 Connect your client to the server:
 ```bash
 # 1. Configure the connection
@@ -78,7 +87,7 @@ enc init
 # Follow the prompts:
 # - URL: http://localhost:2222 (or your server IP)
 # - Username: admin
-# - SSH Key: (Press Enter to auto-generate or provide path)
+# - SSH Key: /path/to/private/key (e.g., ~/.ssh/enc_admin_key)
 
 # 2. Login
 enc login
