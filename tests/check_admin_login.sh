@@ -4,6 +4,19 @@ set -e
 echo "=== Starting Admin Login Test ==="
 
 # Ensure clean slate
+# Ensure clean slate
+# Load password from .env
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ENV_FILE="$SCRIPT_DIR/../enc-server/.env"
+if [ -f "$ENV_FILE" ]; then
+    echo "DEBUG: Loading .env from $ENV_FILE"
+    export $(grep -v '^#' "$ENV_FILE" | xargs)
+else
+    echo "DEBUG: .env file not found at $ENV_FILE"
+fi
+TEST_PASS=${ADMIN_PASSWORD:-"admin"}
+echo "DEBUG: Using password: $TEST_PASS"
+
 rm -rf admin_user
 mkdir -p admin_user
 cd admin_user
@@ -23,10 +36,10 @@ echo "1. Initializing ENC (Local Config)..."
 printf "local\nhttp://localhost:2222\nadmin\n$SSH_KEY_PATH\n" | enc init
 
 echo "2. Logging in..."
-enc login --password admin
+enc login --password "$TEST_PASS"
 
 echo "2.5 Setup SSH Key (Authorize)..."
-enc setup ssh-key --password admin
+enc setup ssh-key --password "$TEST_PASS"
 
 echo "3. Showing Config..."
 enc show -v
@@ -59,7 +72,7 @@ enc logout
 
 echo "11. Login again and List Users..."
 # Re-login as admin
-enc login --password admin
+enc login --password "$TEST_PASS"
 enc user list
 
 echo "12. Creating Developer User..."

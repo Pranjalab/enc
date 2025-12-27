@@ -5,7 +5,15 @@ echo "=== ENC PRODUCTION VERIFICATION FLOW ==="
 echo "This script verifies the entire ecosystem from Docker Registry to Local CLI."
 
 # Ensure we are in the tests directory
+# Ensure we are in the tests directory
 cd "$(dirname "$0")"
+
+# Load password from .env
+ENV_FILE="../enc-server/.env"
+if [ -f "$ENV_FILE" ]; then
+    export $(grep -v '^#' "$ENV_FILE" | xargs)
+fi
+TEST_PASS=${ADMIN_PASSWORD:-"admin"}
 
 # 1. Cleanup
 echo "1. Cleaning up local environment..."
@@ -21,8 +29,11 @@ rm -rf dev_user
 echo "2. Rebuilding server from local source (v0.1.10 fixes)..."
 cd ../enc-server && docker build -q -t pranjalab/enc-server:latest . && cd ../tests
 
+# Default to 30 if env var not set (though it should be from the load block above)
+TIMEOUT_VAL=${ENC_SESSION_TIMEOUT:-30}
+
 echo "3. Starting hardened server container with short timeout for monitoring tests..."
-docker run -d --name enc_ssh_server -p 2222:22 --cap-add SYS_ADMIN --device /dev/fuse -e ENC_SESSION_TIMEOUT=30 pranjalab/enc-server:latest
+docker run -d --name enc_ssh_server -p 2222:22 --cap-add SYS_ADMIN --device /dev/fuse -e ENC_SESSION_TIMEOUT=$TIMEOUT_VAL pranjalab/enc-server:latest
 
 # 3. Wait for Server
 echo "4. Waiting for SSHD to be ready (port 2222)..."
@@ -50,8 +61,8 @@ if [ ! -f "$GLOBAL_SSH_KEY_PATH" ]; then
     GLOBAL_SSH_KEY_PATH="$HOME/.ssh/id_rsa"
 fi
 printf "global\nhttp://localhost:2222\nadmin\n$GLOBAL_SSH_KEY_PATH\n" | enc init
-enc login --password admin
-enc setup ssh-key --password admin
+enc login --password "$TEST_PASS"
+enc setup ssh-key --password "$TEST_PASS"
 
 cd tests
 

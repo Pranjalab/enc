@@ -3,7 +3,15 @@ set -e
 
 # Setup
 TEST_USER="admin"
-TEST_PASS="admin"
+# Load password from .env
+ENV_FILE="../enc-server/.env"
+if [ -f "$ENV_FILE" ]; then
+    export $(grep -v '^#' "$ENV_FILE" | xargs)
+fi
+TEST_PASS=${ADMIN_PASSWORD:-"admin"}
+TIMEOUT_VAL=${ENC_SESSION_TIMEOUT:-30}
+# Wait slightly longer than timeout to ensure expiration
+WAIT_TIME=$((TIMEOUT_VAL + 5))
 PROJECT="mon_test_proj"
 MOUNT_DIR="./mon_mount_point"
 
@@ -23,12 +31,12 @@ rm -rf "$MOUNT_DIR"
 enc logout > /dev/null 2>&1 || true
 
 # 1. Test Command Inactivity Logout
-echo "Test 1: Auto-logout after command inactivity (32s > 30s)"
+echo "Test 1: Auto-logout after command inactivity (${WAIT_TIME}s > ${TIMEOUT_VAL}s)"
 echo "Logging in..."
 enc login --password "$TEST_PASS" > /dev/null
 
-echo "Wait 32s..."
-sleep 32
+echo "Wait ${WAIT_TIME}s..."
+sleep $WAIT_TIME
 
 echo "Checking status..."
 if enc project list 2>&1 | grep -qE "Please login first|Failed to retrieve project list|Invalid or expired session"; then
@@ -74,8 +82,8 @@ fi
 
 # B. Auto-Logout No Activity
 echo "Subtest B: Auto-logout after NO file activity"
-echo "Waiting 32s with NO activity..."
-sleep 32
+echo "Waiting ${WAIT_TIME}s with NO activity..."
+sleep $WAIT_TIME
 
 # Check session - should be closed
 if enc project list 2>&1 | grep -qE "Please login first|Failed to retrieve project list|Invalid or expired session"; then

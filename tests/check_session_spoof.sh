@@ -3,7 +3,12 @@ set -e
 
 # Setup
 TEST_USER="admin"
-TEST_PASS="admin"
+# Load password from .env
+ENV_FILE="../enc-server/.env"
+if [ -f "$ENV_FILE" ]; then
+    export $(grep -v '^#' "$ENV_FILE" | xargs)
+fi
+TEST_PASS=${ADMIN_PASSWORD:-"admin"}
 CONFIG_DIR="$HOME/.enc"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 
