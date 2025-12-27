@@ -23,6 +23,73 @@ To solve this problem, we’re excited to introduce the **ENC Project**—a secu
 
 ---
 
+---
+
+## ⚡ Quick Start
+
+Follow these steps to get your ENC ecosystem up and running in minutes.
+
+### 1. Clone the Repository
+Clone the project along with its submodules:
+```bash
+git clone --recurse-submodules https://github.com/Pranjalab/enc.git
+cd enc
+```
+
+### 2. server Setup 
+Navigate to the server directory and configure your environment:
+```bash
+cd enc-server
+
+# 1. Setup Environment Variables
+# Create a .env file (or copy the example)
+echo "ADMIN_PASSWORD=your_secure_password" > .env
+echo "ENC_SESSION_TIMEOUT=600" >> .env
+
+# 2. Setup SSH Host Keys Volume
+# Ensure the host keys directory exists so keys persist across restarts
+mkdir -p ssh/host_keys
+
+# 3. Deploy
+# Check/Update docker-compose.yml if needed (e.g., ports)
+docker compose up --build -d
+```
+*The server is now running on port `2222` (default).*
+
+### 3. Client CLI Setup (`enc-cli`)
+Now, install the client on your local machine:
+```bash
+cd ../enc-cli
+
+# 1. Install the CLI
+# Use 'pip install .' for standard install or '-e .' for editable mode
+pip install .
+
+# 2. Install Dependencies & Setup
+# This helper command checks for SSHFS and sets up config directories
+enc install
+```
+
+### 4. Initialize & Login
+Connect your client to the server:
+```bash
+# 1. Configure the connection
+enc init
+# Follow the prompts:
+# - URL: http://localhost:2222 (or your server IP)
+# - Username: admin
+# - SSH Key: (Press Enter to auto-generate or provide path)
+
+# 2. Login
+enc login
+# Enter the password you set in ADMIN_PASSWORD
+
+# 3. Explore
+enc --help
+```
+
+---
+
 ## 🌟 Overview
 
 ENC is designed to protect your intellectual property and sensitive logic by ensuring your code is **always encrypted at rest** and only decrypted **in memory** during active execution.
@@ -61,10 +128,10 @@ We are constantly evolving ENC to make it the standard for secure engineering.
 
 ## 📚 Table of Contents
 
+- [**Quick Start Guide**](#-quick-start)
 - [**Installation & Setup**](#-installation--setup)
     - [Server Setup](enc-server/README.md)
     - [Client CLI Setup](enc-cli/README.md)
-- [**Quick Start Guide**](#-quick-start)
 - [**Documentation**](#-documentation)
 - [**Contributing**](#-contributing)
 - [**License**](#-license)
@@ -72,6 +139,8 @@ We are constantly evolving ENC to make it the standard for secure engineering.
 ---
 
 ## 🚀 Installation & Setup
+
+> **Note**: For a quick setup, refer to the [Quick Start](#-quick-start) section above.
 
 ### 1. The Server
 You need an ENC Server to host your projects. You can run one on your local machine for testing or deploy it to a remote VPS.
@@ -81,45 +150,6 @@ You need an ENC Server to host your projects. You can run one on your local mach
 Install the `enc` CLI to communicate with your server.
 👉 **[Read the Client Installation Guide](enc-cli/README.md)**
 > **Requirement**: Mounting requires `sshfs`. Ensure it is installed (`brew install sshfs`).
-
----
-
-## ⚡ Quick Start
-
-Once you have both installed:
-
-1.  **Initialize Configuration**:
-    ```bash
-    enc config init
-    # Follow the prompts to set your Username and Server URL
-    ```
-
-    enc login
-    ```
-
-3.  **Setup SSH Key (Optional but Recommended)**:
-    ```bash
-    enc setup ssh-key
-    # Auto-generates keys and registers them for password-less access!
-    ```
-
-4.  **Create a New Project**:
-    ```bash
-    enc project init my-secret-app
-    ```
-
-5.  **Mount & Edit**:
-    ```bash
-    mkdir ./my-app-edit
-    enc project mount my-secret-app ./my-app-edit
-    ```
-    *Now open `./my-app-edit` in VS Code. All files you write are encrypted instantly on the server.*
-
-6.  **Logout**:
-    ```bash
-    enc logout
-    # Safely unmounts all projects and closes the secure tunnel.
-    ```
 
 ---
 

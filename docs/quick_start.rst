@@ -6,61 +6,76 @@ Get up and running with ENC in minutes. This guide covers the fastest way to dep
 .. note::
    Don't want to set up a server? We are working on a **Hosted ENC Server** for users to experiment with zero setup. Stay tuned!
 
-1. Deploy the Server
---------------------
+1. Clone the Repository
+-----------------------
 
-On your remote server (Ubuntu/Debian recommended):
+Clone the project along with its submodules:
 
 .. code-block:: bash
 
-   # Clone the repository
-   git clone https://github.com/Pranjalab/enc.git
-   cd enc/enc-server
+   git clone --recurse-submodules https://github.com/Pranjalab/enc.git
+   cd enc
 
-   # Run the deployment script (Docker required)
-   sudo ./deploy.sh
+2. Server Setup
+---------------
 
-This will verify dependencies, build the ``enc-server`` Docker image, and start the service on port 2222.
+Navigate to the server directory and configure your environment:
 
-2. Install the Client
+.. code-block:: bash
+
+   cd enc-server
+
+   # 1. Setup Environment Variables
+   # Create a .env file
+   echo "ADMIN_PASSWORD=your_secure_password" > .env
+   echo "ENC_SESSION_TIMEOUT=600" >> .env
+
+   # 2. Setup SSH Host Keys Volume
+   mkdir -p ssh/host_keys
+
+   # 3. Deploy
+   docker compose up --build -d
+
+The server is now running on port **2222** (default).
+
+3. Client CLI Setup
+-------------------
+
+Install the client on your local machine:
+
+.. code-block:: bash
+
+   cd ../enc-cli
+
+   # 1. Install the CLI
+   # Use 'pip install .' for standard or '-e .' for editable
+   pip install .
+
+   # 2. Install Dependencies & Setup
+   # Checks for SSHFS and sets up config directories
+   enc install
+
+4. Initialize & Login
 ---------------------
 
-On your local machine (macOS/Linux):
+Connect your client to the server:
 
 .. code-block:: bash
 
-   # Clone the repository
-   git clone https://github.com/Pranjalab/enc.git
-   cd enc/enc-cli
+   # 1. Configure the connection
+   enc init
+   # Follow prompts:
+   # URL: http://localhost:2222
+   # Username: admin
 
-   # Run the installer
-   ./install.sh
-
-This installs the ``enc`` command to ``/usr/local/bin``.
-
-3. Initialize Your First Project
---------------------------------
-
-Now, create a user and start your first secure project:
-
-.. code-block:: bash
-
-   # 1. Create your user on the server (requires admin access or first run)
-   # (On the server)
-   docker exec -it enc-server enc user create <your-username>
-
-   # 2. Login from your client
+   # 2. Login
    enc login
-   # Enter password
+   # Enter your ADMIN_PASSWORD
 
-   # 3. Setup SSH Access (Auto)
+   # 3. Setup SSH Key (Recommended)
    enc setup ssh-key
-   # Generates and registers keys automatically!
 
-   # 4. Initialize a new encrypted project
-   enc project init my-secure-algo
-
-   # 5. Mount it locally
-   enc project mount my-secure-algo
-
-Your project is now mounted at ``~/enc/projects/my-secure-algo``. Any files you create there are encrypt-on-write!
+   # 4. Create & Mount Project
+   enc project init my-app
+   mkdir ./my-app-edit
+   enc project mount my-app ./my-app-edit
