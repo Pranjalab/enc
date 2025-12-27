@@ -126,18 +126,6 @@ We are constantly evolving ENC to make it the standard for secure engineering.
 
 ---
 
-## 📚 Table of Contents
-
-- [**Quick Start Guide**](#-quick-start)
-- [**Installation & Setup**](#-installation--setup)
-    - [Server Setup](enc-server/README.md)
-    - [Client CLI Setup](enc-cli/README.md)
-- [**Documentation**](#-documentation)
-- [**Contributing**](#-contributing)
-- [**License**](#-license)
-
----
-
 ## 🚀 Installation & Setup
 
 > **Note**: For a quick setup, refer to the [Quick Start](#-quick-start) section above.
