@@ -52,9 +52,10 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Quick Start</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#deploy-the-server">1. Deploy the Server</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#install-the-client">2. Install the Client</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#initialize-your-first-project">3. Initialize Your First Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#server-setup">2. Server Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#client-cli-setup">3. Client CLI Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#initialize-login">4. Initialize &amp; Login</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="installation_cli.html">ENC CLI Installation</a><ul>
@@ -225,55 +226,70 @@
 <p class="admonition-title">Note</p>
 <p>Don’t want to set up a server? We are working on a <strong>Hosted ENC Server</strong> for users to experiment with zero setup. Stay tuned!</p>
 </div>
-<section id="deploy-the-server">
-<h2>1. Deploy the Server<a class="headerlink" href="#deploy-the-server" title="Link to this heading"></a></h2>
-<p>On your remote server (Ubuntu/Debian recommended):</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Clone the repository</span>
-git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Pranjalab/enc.git
-<span class="nb">cd</span><span class="w"> </span>enc/enc-server
-
-<span class="c1"># Run the deployment script (Docker required)</span>
-sudo<span class="w"> </span>./deploy.sh
+<section id="clone-the-repository">
+<h2>1. Clone the Repository<a class="headerlink" href="#clone-the-repository" title="Link to this heading"></a></h2>
+<p>Clone the project along with its submodules:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>--recurse-submodules<span class="w"> </span>https://github.com/Pranjalab/enc.git
+<span class="nb">cd</span><span class="w"> </span>enc
 </pre></div>
 </div>
-<p>This will verify dependencies, build the <code class="docutils literal notranslate"><span class="pre">enc-server</span></code> Docker image, and start the service on port 2222.</p>
 </section>
-<section id="install-the-client">
-<h2>2. Install the Client<a class="headerlink" href="#install-the-client" title="Link to this heading"></a></h2>
-<p>On your local machine (macOS/Linux):</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Clone the repository</span>
-git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Pranjalab/enc.git
-<span class="nb">cd</span><span class="w"> </span>enc/enc-cli
+<section id="server-setup">
+<h2>2. Server Setup<a class="headerlink" href="#server-setup" title="Link to this heading"></a></h2>
+<p>Navigate to the server directory and configure your environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>enc-server
 
-<span class="c1"># Run the installer</span>
-./install.sh
+<span class="c1"># 1. Setup Environment Variables</span>
+<span class="c1"># Create a .env file</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;ADMIN_PASSWORD=your_secure_password&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>.env
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;ENC_SESSION_TIMEOUT=600&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>.env
+
+<span class="c1"># 2. Setup SSH Host Keys Volume</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span>ssh/host_keys
+
+<span class="c1"># 3. Deploy</span>
+docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>--build<span class="w"> </span>-d
 </pre></div>
 </div>
-<p>This installs the <code class="docutils literal notranslate"><span class="pre">enc</span></code> command to <code class="docutils literal notranslate"><span class="pre">/usr/local/bin</span></code>.</p>
+<p>The server is now running on port <strong>2222</strong> (default).</p>
 </section>
-<section id="initialize-your-first-project">
-<h2>3. Initialize Your First Project<a class="headerlink" href="#initialize-your-first-project" title="Link to this heading"></a></h2>
-<p>Now, create a user and start your first secure project:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Create your user on the server (requires admin access or first run)</span>
-<span class="c1"># (On the server)</span>
-docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>enc-server<span class="w"> </span>enc<span class="w"> </span>user<span class="w"> </span>create<span class="w"> </span>&lt;your-username&gt;
+<section id="client-cli-setup">
+<h2>3. Client CLI Setup<a class="headerlink" href="#client-cli-setup" title="Link to this heading"></a></h2>
+<p>Install the client on your local machine:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>../enc-cli
 
-<span class="c1"># 2. Login from your client</span>
+<span class="c1"># 1. Install the CLI</span>
+<span class="c1"># Use &#39;pip install .&#39; for standard or &#39;-e .&#39; for editable</span>
+pip<span class="w"> </span>install<span class="w"> </span>.
+
+<span class="c1"># 2. Install Dependencies &amp; Setup</span>
+<span class="c1"># Checks for SSHFS and sets up config directories</span>
+enc<span class="w"> </span>install
+</pre></div>
+</div>
+</section>
+<section id="initialize-login">
+<h2>4. Initialize &amp; Login<a class="headerlink" href="#initialize-login" title="Link to this heading"></a></h2>
+<p>Connect your client to the server:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Configure the connection</span>
+enc<span class="w"> </span>init
+<span class="c1"># Follow prompts:</span>
+<span class="c1"># URL: http://localhost:2222</span>
+<span class="c1"># Username: admin</span>
+
+<span class="c1"># 2. Login</span>
 enc<span class="w"> </span>login
-<span class="c1"># Enter password</span>
+<span class="c1"># Enter your ADMIN_PASSWORD</span>
 
-<span class="c1"># 3. Setup SSH Access (Auto)</span>
+<span class="c1"># 3. Setup SSH Key (Recommended)</span>
 enc<span class="w"> </span>setup<span class="w"> </span>ssh-key
-<span class="c1"># Generates and registers keys automatically!</span>
 
-<span class="c1"># 4. Initialize a new encrypted project</span>
-enc<span class="w"> </span>project<span class="w"> </span>init<span class="w"> </span>my-secure-algo
-
-<span class="c1"># 5. Mount it locally</span>
-enc<span class="w"> </span>project<span class="w"> </span>mount<span class="w"> </span>my-secure-algo
+<span class="c1"># 4. Create &amp; Mount Project</span>
+enc<span class="w"> </span>project<span class="w"> </span>init<span class="w"> </span>my-app
+mkdir<span class="w"> </span>./my-app-edit
+enc<span class="w"> </span>project<span class="w"> </span>mount<span class="w"> </span>my-app<span class="w"> </span>./my-app-edit
 </pre></div>
 </div>
-<p>Your project is now mounted at <code class="docutils literal notranslate"><span class="pre">~/enc/projects/my-secure-algo</span></code>. Any files you create there are encrypt-on-write!</p>
 </section>
 </section>
 
