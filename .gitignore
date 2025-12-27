@@ -74,6 +74,5 @@ tests/*
 !tests/*.sh
 !tests/*.py
 !tests/admin_user/
-!tests/dev_user/
+tests/dev_user/
 !tests/logs/.gitkeep
-
