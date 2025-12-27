@@ -163,10 +163,10 @@ We welcome contributions! Whether it's reporting a bug, suggesting a feature, or
 
 ### Contributors
 
-<a href="https://github.com/pranjalab" align="center">
+<!-- <a href="https://github.com/pranjalab" align="center">
   <img src="https://github.com/pranjalab.png" alt="Pranjal" width="100" height="100" style="border-radius:50%;" />
 </a>  
-  
+   -->
 **Pranjal Bhaskare** 
 
 ### Acknowledgements
