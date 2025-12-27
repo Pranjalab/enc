@@ -6,7 +6,16 @@ Get up and running with ENC in minutes. This guide covers the fastest way to dep
 .. note::
    Don't want to set up a server? We are working on a **Hosted ENC Server** for users to experiment with zero setup. Stay tuned!
 
-1. Clone the Repository
+1. Generate SSH Key (Pre-requisite)
+------------------------------------
+
+If you don't already have an SSH key, generate one:
+
+.. code-block:: bash
+
+   ssh-keygen -t ed25519 -f ~/.ssh/enc_admin_key -N ""
+
+2. Clone the Repository
 -----------------------
 
 Clone the project along with its submodules:
@@ -16,7 +25,7 @@ Clone the project along with its submodules:
    git clone --recurse-submodules https://github.com/Pranjalab/enc.git
    cd enc
 
-2. Server Setup
+3. Server Setup
 ---------------
 
 Navigate to the server directory and configure your environment:
@@ -30,15 +39,20 @@ Navigate to the server directory and configure your environment:
    echo "ADMIN_PASSWORD=your_secure_password" > .env
    echo "ENC_SESSION_TIMEOUT=600" >> .env
 
-   # 2. Setup SSH Host Keys Volume
+   # 2. Setup SSH Keys
    mkdir -p ssh/host_keys
+   touch ssh/authorized_keys
+   chmod 600 ssh/authorized_keys
 
-   # 3. Deploy
+   # 3. Add your Public Key to Server (Crucial!)
+   cat ~/.ssh/enc_admin_key.pub >> ssh/authorized_keys
+
+   # 4. Deploy
    docker compose up --build -d
 
-The server is now running on port **2222** (default).
+The server is now running on port **2222** (default) and has authorized your key.
 
-3. Client CLI Setup
+4. Client CLI Setup
 -------------------
 
 Install the client on your local machine:
@@ -55,7 +69,7 @@ Install the client on your local machine:
    # Checks for SSHFS and sets up config directories
    enc install
 
-4. Initialize & Login
+5. Initialize & Login
 ---------------------
 
 Connect your client to the server:
@@ -67,15 +81,11 @@ Connect your client to the server:
    # Follow prompts:
    # URL: http://localhost:2222
    # Username: admin
+   # SSH Key: /path/to/private/key (e.g., ~/.ssh/enc_admin_key)
 
    # 2. Login
    enc login
    # Enter your ADMIN_PASSWORD
 
-   # 3. Setup SSH Key (Recommended)
-   enc setup ssh-key
-
-   # 4. Create & Mount Project
-   enc project init my-app
-   mkdir ./my-app-edit
-   enc project mount my-app ./my-app-edit
+   # 3. Explore
+   enc --help

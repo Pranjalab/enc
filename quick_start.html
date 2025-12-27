@@ -52,10 +52,11 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Quick Start</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#clone-the-repository">1. Clone the Repository</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#server-setup">2. Server Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#client-cli-setup">3. Client CLI Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#initialize-login">4. Initialize &amp; Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#generate-ssh-key-pre-requisite">1. Generate SSH Key (Pre-requisite)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#clone-the-repository">2. Clone the Repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#server-setup">3. Server Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#client-cli-setup">4. Client CLI Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#initialize-login">5. Initialize &amp; Login</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="installation_cli.html">ENC CLI Installation</a><ul>
@@ -226,8 +227,15 @@
 <p class="admonition-title">Note</p>
 <p>Don’t want to set up a server? We are working on a <strong>Hosted ENC Server</strong> for users to experiment with zero setup. Stay tuned!</p>
 </div>
+<section id="generate-ssh-key-pre-requisite">
+<h2>1. Generate SSH Key (Pre-requisite)<a class="headerlink" href="#generate-ssh-key-pre-requisite" title="Link to this heading"></a></h2>
+<p>If you don’t already have an SSH key, generate one:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ssh-keygen<span class="w"> </span>-t<span class="w"> </span>ed25519<span class="w"> </span>-f<span class="w"> </span>~/.ssh/enc_admin_key<span class="w"> </span>-N<span class="w"> </span><span class="s2">&quot;&quot;</span>
+</pre></div>
+</div>
+</section>
 <section id="clone-the-repository">
-<h2>1. Clone the Repository<a class="headerlink" href="#clone-the-repository" title="Link to this heading"></a></h2>
+<h2>2. Clone the Repository<a class="headerlink" href="#clone-the-repository" title="Link to this heading"></a></h2>
 <p>Clone the project along with its submodules:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>--recurse-submodules<span class="w"> </span>https://github.com/Pranjalab/enc.git
 <span class="nb">cd</span><span class="w"> </span>enc
@@ -235,7 +243,7 @@
 </div>
 </section>
 <section id="server-setup">
-<h2>2. Server Setup<a class="headerlink" href="#server-setup" title="Link to this heading"></a></h2>
+<h2>3. Server Setup<a class="headerlink" href="#server-setup" title="Link to this heading"></a></h2>
 <p>Navigate to the server directory and configure your environment:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>enc-server
 
@@ -244,17 +252,22 @@
 <span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;ADMIN_PASSWORD=your_secure_password&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>.env
 <span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;ENC_SESSION_TIMEOUT=600&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>.env
 
-<span class="c1"># 2. Setup SSH Host Keys Volume</span>
+<span class="c1"># 2. Setup SSH Keys</span>
 mkdir<span class="w"> </span>-p<span class="w"> </span>ssh/host_keys
+touch<span class="w"> </span>ssh/authorized_keys
+chmod<span class="w"> </span><span class="m">600</span><span class="w"> </span>ssh/authorized_keys
 
-<span class="c1"># 3. Deploy</span>
+<span class="c1"># 3. Add your Public Key to Server (Crucial!)</span>
+cat<span class="w"> </span>~/.ssh/enc_admin_key.pub<span class="w"> </span>&gt;&gt;<span class="w"> </span>ssh/authorized_keys
+
+<span class="c1"># 4. Deploy</span>
 docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>--build<span class="w"> </span>-d
 </pre></div>
 </div>
-<p>The server is now running on port <strong>2222</strong> (default).</p>
+<p>The server is now running on port <strong>2222</strong> (default) and has authorized your key.</p>
 </section>
 <section id="client-cli-setup">
-<h2>3. Client CLI Setup<a class="headerlink" href="#client-cli-setup" title="Link to this heading"></a></h2>
+<h2>4. Client CLI Setup<a class="headerlink" href="#client-cli-setup" title="Link to this heading"></a></h2>
 <p>Install the client on your local machine:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>../enc-cli
 
@@ -269,25 +282,21 @@ enc<span class="w"> </span>install
 </div>
 </section>
 <section id="initialize-login">
-<h2>4. Initialize &amp; Login<a class="headerlink" href="#initialize-login" title="Link to this heading"></a></h2>
+<h2>5. Initialize &amp; Login<a class="headerlink" href="#initialize-login" title="Link to this heading"></a></h2>
 <p>Connect your client to the server:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Configure the connection</span>
 enc<span class="w"> </span>init
 <span class="c1"># Follow prompts:</span>
 <span class="c1"># URL: http://localhost:2222</span>
 <span class="c1"># Username: admin</span>
+<span class="c1"># SSH Key: /path/to/private/key (e.g., ~/.ssh/enc_admin_key)</span>
 
 <span class="c1"># 2. Login</span>
 enc<span class="w"> </span>login
 <span class="c1"># Enter your ADMIN_PASSWORD</span>
 
-<span class="c1"># 3. Setup SSH Key (Recommended)</span>
-enc<span class="w"> </span>setup<span class="w"> </span>ssh-key
-
-<span class="c1"># 4. Create &amp; Mount Project</span>
-enc<span class="w"> </span>project<span class="w"> </span>init<span class="w"> </span>my-app
-mkdir<span class="w"> </span>./my-app-edit
-enc<span class="w"> </span>project<span class="w"> </span>mount<span class="w"> </span>my-app<span class="w"> </span>./my-app-edit
+<span class="c1"># 3. Explore</span>
+enc<span class="w"> </span>--help
 </pre></div>
 </div>
 </section>
